@@ -1,5 +1,5 @@
 # RPM Authoring Tools
-This set of command line tools facilitates the creation, analysis and usage of [libRPM](github.com/HelloOO7/libRPM)'s executable format files.
+This set of command line tools facilitates the creation, analysis and usage of [libRPM](https://github.com/HelloOO7/libRPM)'s executable format files.
 ## RPMDump
 RPMDump logs a complete summary of an input RPM file into the console or a text file for better inspection of relocation and symbol tables. It is located at `rpm.cli.RPMDump`.
 ## RPMTool
