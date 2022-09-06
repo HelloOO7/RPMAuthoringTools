@@ -1,12 +1,12 @@
 
 package rpm.elfconv.exec;
 
-import ctrmap.stdlib.io.util.IOUtils;
+import xstandard.io.util.IOUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import rpm.elfconv.ExternalSymbolDB;
-import ctrmap.stdlib.math.MathEx;
+import xstandard.math.MathEx;
 
 /**
  *

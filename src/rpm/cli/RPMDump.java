@@ -1,18 +1,18 @@
 package rpm.cli;
 
-import ctrmap.stdlib.cli.ArgumentBuilder;
-import ctrmap.stdlib.cli.ArgumentContent;
-import ctrmap.stdlib.cli.ArgumentPattern;
-import ctrmap.stdlib.cli.ArgumentType;
+import xstandard.cli.ArgumentBuilder;
+import xstandard.cli.ArgumentContent;
+import xstandard.cli.ArgumentPattern;
+import xstandard.cli.ArgumentType;
 import rpm.format.rpm.RPM;
 import rpm.format.rpm.RPMMetaData;
 import rpm.format.rpm.RPMRelocation;
 import rpm.format.rpm.RPMSymbol;
-import ctrmap.stdlib.fs.FSFile;
-import ctrmap.stdlib.fs.accessors.DiskFile;
-import ctrmap.stdlib.io.base.iface.IOStream;
-import ctrmap.stdlib.io.util.IndentedPrintStream;
-import ctrmap.stdlib.util.JVMClassSourceChecker;
+import xstandard.fs.FSFile;
+import xstandard.fs.accessors.DiskFile;
+import xstandard.io.base.iface.IOStream;
+import xstandard.io.util.IndentedPrintStream;
+import xstandard.util.JVMClassSourceChecker;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.logging.Level;
@@ -33,8 +33,8 @@ public class RPMDump {
 	public static void main(String[] args) {
 		if (!JVMClassSourceChecker.isJAR() && args.length == 0) {
 			args = new String[]{
-				"--fourcc DLXF",
-				"D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all\\NPCInfoLoaderReimpl.dll",
+				//"--fourcc DLXF",
+				"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\MorbiusSweep\\build\\MorbiusSweep.rpm",
 				"-r -s -m"
 			};
 		}

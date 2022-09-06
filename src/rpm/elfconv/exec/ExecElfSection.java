@@ -5,21 +5,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import ctrmap.stdlib.arm.ThumbAssembler;
+import xstandard.arm.ThumbAssembler;
 import rpm.elfconv.ExternalSymbolDB;
-import ctrmap.stdlib.arm.elf.SectionType;
-import ctrmap.stdlib.arm.elf.SymbInfo;
-import ctrmap.stdlib.arm.elf.format.ELF;
-import ctrmap.stdlib.arm.elf.format.sections.ELFSection;
-import ctrmap.stdlib.arm.elf.format.sections.ELFSymbolSection;
+import xstandard.arm.elf.SectionType;
+import xstandard.arm.elf.SymbInfo;
+import xstandard.arm.elf.format.ELF;
+import xstandard.arm.elf.format.sections.ELFSection;
+import xstandard.arm.elf.format.sections.ELFSymbolSection;
 import rpm.format.rpm.RPM;
 import rpm.format.rpm.RPMRelTargetType;
 import rpm.format.rpm.RPMRelocation;
 import rpm.format.rpm.RPMRelocationSource;
 import rpm.format.rpm.RPMRelocationTarget;
 import rpm.format.rpm.RPMSymbol;
-import ctrmap.stdlib.io.base.impl.ext.data.DataIOStream;
-import ctrmap.stdlib.math.MathEx;
+import xstandard.io.base.impl.ext.data.DataIOStream;
+import xstandard.math.MathEx;
 
 /**
  *

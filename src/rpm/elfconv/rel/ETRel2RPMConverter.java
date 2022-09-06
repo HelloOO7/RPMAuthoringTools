@@ -6,12 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import rpm.elfconv.ExternalSymbolDB;
-import ctrmap.stdlib.arm.elf.SectionType;
-import ctrmap.stdlib.arm.elf.format.ELF;
-import ctrmap.stdlib.arm.elf.format.ELFARMRelocationType;
-import ctrmap.stdlib.arm.elf.format.sections.ELFRelocationSectionBase;
-import ctrmap.stdlib.arm.elf.format.sections.ELFSection;
-import ctrmap.stdlib.arm.elf.format.sections.ELFSymbolSection;
+import xstandard.arm.elf.SectionType;
+import xstandard.arm.elf.format.ELF;
+import xstandard.arm.elf.format.ELFARMRelocationType;
+import xstandard.arm.elf.format.sections.ELFRelocationSectionBase;
+import xstandard.arm.elf.format.sections.ELFSection;
+import xstandard.arm.elf.format.sections.ELFSymbolSection;
 import rpm.format.rpm.RPM;
 import rpm.format.rpm.RPMRelocation;
 import rpm.format.rpm.RPMRelocationSource;
@@ -21,8 +21,8 @@ import rpm.format.rpm.RPMRelTargetType;
 import rpm.format.rpm.RPMRelocationTarget;
 import rpm.format.rpm.RPMSymbolAddress;
 import rpm.format.rpm.RPMSymbolType;
-import ctrmap.stdlib.io.base.impl.ext.data.DataIOStream;
-import ctrmap.stdlib.math.MathEx;
+import xstandard.io.base.impl.ext.data.DataIOStream;
+import xstandard.math.MathEx;
 
 /**
  *

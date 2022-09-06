@@ -2,10 +2,10 @@ package rpm.format.rpz;
 
 import rpm.format.rpm.RPM;
 import rpm.format.rpm.RPMMetaData;
-import ctrmap.stdlib.formats.zip.ZipArchive;
-import ctrmap.stdlib.fs.FSFile;
-import ctrmap.stdlib.fs.FSUtil;
-import ctrmap.stdlib.fs.accessors.FSFileAdapter;
+import xstandard.formats.zip.ZipArchive;
+import xstandard.fs.FSFile;
+import xstandard.fs.FSUtil;
+import xstandard.fs.accessors.FSFileAdapter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

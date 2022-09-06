@@ -1,6 +1,6 @@
 package rpm.elfconv.rel;
 
-import ctrmap.stdlib.arm.elf.format.sections.ELFSymbolSection;
+import xstandard.arm.elf.format.sections.ELFSymbolSection;
 import rpm.format.rpm.RPMSymbol;
 import rpm.format.rpm.RPMSymbolType;
 
@@ -16,8 +16,9 @@ public class Elf2RPMSymbolAdapter extends RPMSymbol {
 		name = origin.name;
 		size = origin.size;
 		type = getRpmSymType(origin.getSymType());
-		if (origin.getVisibility() == ELFSymbolSection.ELFSymbolVisibility.DEFAULT && origin.sectionIndex != 0) { //nonextern default visibility symbol
+		if (name != null && origin.getVisibility() == ELFSymbolSection.ELFSymbolVisibility.DEFAULT && origin.sectionIndex != 0) { //nonextern default visibility symbol
 			attributes |= RPM_SYMATTR_EXPORT;
+			System.out.println("Export symbol " + name);
 		}
 	}
 

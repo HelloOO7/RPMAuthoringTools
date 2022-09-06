@@ -1,9 +1,9 @@
 package rpm.format.rpz;
 
-import ctrmap.stdlib.formats.yaml.Yaml;
-import ctrmap.stdlib.formats.yaml.YamlNodeName;
-import ctrmap.stdlib.formats.yaml.YamlReflectUtil;
-import ctrmap.stdlib.fs.FSFile;
+import xstandard.formats.yaml.Yaml;
+import xstandard.formats.yaml.YamlNodeName;
+import xstandard.formats.yaml.YamlReflectUtil;
+import xstandard.fs.FSFile;
 
 class RPZYmlBase extends Yaml {
 

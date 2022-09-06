@@ -1,14 +1,14 @@
 
 package rpm.elfconv;
 
-import ctrmap.stdlib.arm.elf.format.ELF;
+import xstandard.arm.elf.format.ELF;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import rpm.elfconv.rel.ETRel2RPMConverter;
 import rpm.elfconv.exec.ETExec2RPMConverter;
 import rpm.format.rpm.RPM;
-import ctrmap.stdlib.fs.FSFile;
+import xstandard.fs.FSFile;
 
 /**
  *

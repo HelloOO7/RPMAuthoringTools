@@ -1,21 +1,21 @@
 package rpm.elfconv.exec;
 
-import ctrmap.stdlib.fs.accessors.DiskFile;
+import xstandard.fs.accessors.DiskFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import rpm.elfconv.ExternalSymbolDB;
-import ctrmap.stdlib.arm.elf.SectionType;
-import ctrmap.stdlib.arm.elf.format.ELF;
-import ctrmap.stdlib.arm.elf.format.sections.ELFSection;
-import ctrmap.stdlib.arm.elf.format.sections.ELFSymbolSection;
+import xstandard.arm.elf.SectionType;
+import xstandard.arm.elf.format.ELF;
+import xstandard.arm.elf.format.sections.ELFSection;
+import xstandard.arm.elf.format.sections.ELFSymbolSection;
 import rpm.elfconv.rel.Elf2RPMSymbolAdapter;
 import rpm.format.rpm.RPM;
 import rpm.format.rpm.RPMSymbolAddress;
 import rpm.format.rpm.RPMSymbolType;
 import rpm.elfconv.IElf2RpmConverter;
-import ctrmap.stdlib.io.base.impl.ext.data.DataIOStream;
+import xstandard.io.base.impl.ext.data.DataIOStream;
 
 /**
  *

@@ -1,9 +1,9 @@
 package rpm.format.rpm;
 
-import ctrmap.stdlib.io.base.iface.DataOutputEx;
-import ctrmap.stdlib.io.structs.StringTable;
-import ctrmap.stdlib.math.BitMath;
-import ctrmap.stdlib.util.ArraysEx;
+import xstandard.io.base.iface.DataOutputEx;
+import xstandard.io.structs.StringTable;
+import xstandard.math.BitMath;
+import xstandard.util.ArraysEx;
 import java.io.IOException;
 import java.util.List;
 

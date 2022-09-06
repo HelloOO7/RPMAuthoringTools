@@ -1,7 +1,7 @@
 package rpm.format.rpm;
 
-import ctrmap.stdlib.io.base.iface.IOStream;
-import ctrmap.stdlib.io.base.impl.ext.data.DataIOStream;
+import xstandard.io.base.iface.IOStream;
+import xstandard.io.base.impl.ext.data.DataIOStream;
 import java.io.IOException;
 
 class RPMReader extends DataIOStream {

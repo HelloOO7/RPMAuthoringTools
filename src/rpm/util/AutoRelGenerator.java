@@ -8,10 +8,10 @@ import rpm.format.rpm.RPMRelocation;
 import rpm.format.rpm.RPMRelocationSource;
 import rpm.format.rpm.RPMRelocationTarget;
 import rpm.format.rpm.RPMSymbol;
-import ctrmap.stdlib.math.MathEx;
-import ctrmap.stdlib.text.StringEx;
-import ctrmap.stdlib.util.ArraysEx;
-import ctrmap.stdlib.util.ParsingUtils;
+import xstandard.math.MathEx;
+import xstandard.text.StringEx;
+import xstandard.util.ArraysEx;
+import xstandard.util.ParsingUtils;
 import java.util.List;
 
 public class AutoRelGenerator {

@@ -1,6 +1,6 @@
 package rpm.format.rpm;
 
-import ctrmap.stdlib.io.structs.StringTable;
+import xstandard.io.structs.StringTable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

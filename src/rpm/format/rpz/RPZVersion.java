@@ -1,6 +1,6 @@
 package rpm.format.rpz;
 
-import ctrmap.stdlib.formats.yaml.YamlNodeName;
+import xstandard.formats.yaml.YamlNodeName;
 
 public class RPZVersion {
 

@@ -1,6 +1,6 @@
 package rpm.elfconv;
 
-import ctrmap.stdlib.arm.elf.format.ELF;
+import xstandard.arm.elf.format.ELF;
 import java.io.IOException;
 import rpm.format.rpm.RPM;
 

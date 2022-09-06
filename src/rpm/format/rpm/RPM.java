@@ -1,26 +1,26 @@
 package rpm.format.rpm;
 
-import ctrmap.stdlib.arm.ARMAssembler;
-import ctrmap.stdlib.fs.FSFile;
-import ctrmap.stdlib.text.FormattingUtils;
-import ctrmap.stdlib.io.InvalidMagicException;
-import ctrmap.stdlib.io.util.StringIO;
+import xstandard.arm.ARMAssembler;
+import xstandard.fs.FSFile;
+import xstandard.text.FormattingUtils;
+import xstandard.io.InvalidMagicException;
+import xstandard.io.util.StringIO;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import ctrmap.stdlib.arm.ThumbAssembler;
-import ctrmap.stdlib.fs.accessors.DiskFile;
-import ctrmap.stdlib.gui.file.ExtensionFilter;
-import ctrmap.stdlib.io.base.iface.IOStream;
-import ctrmap.stdlib.io.base.impl.ext.data.DataIOStream;
-import ctrmap.stdlib.io.structs.StringTable;
-import ctrmap.stdlib.io.structs.TemporaryOffset;
-import ctrmap.stdlib.io.structs.TemporaryValue;
-import ctrmap.stdlib.math.MathEx;
-import ctrmap.stdlib.util.ArraysEx;
+import xstandard.arm.ThumbAssembler;
+import xstandard.fs.accessors.DiskFile;
+import xstandard.gui.file.ExtensionFilter;
+import xstandard.io.base.iface.IOStream;
+import xstandard.io.base.impl.ext.data.DataIOStream;
+import xstandard.io.structs.StringTable;
+import xstandard.io.structs.TemporaryOffset;
+import xstandard.io.structs.TemporaryValue;
+import xstandard.math.MathEx;
+import xstandard.util.ArraysEx;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -879,7 +879,7 @@ public class RPM {
 	}
 
 	public static void main(String[] args) {
-		DiskFile folder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all");
+		/*DiskFile folder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all");
 		DiskFile outfolder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches");
 		for (FSFile child : folder.listFiles()) {
 			if (child.getName().endsWith(".dll") || child.getName().endsWith(".rpm")) {
@@ -894,7 +894,10 @@ public class RPM {
 				RPM mod = new RPM(data);
 				outfolder.getChild(child.getNameWithoutExtension() + ".dll").setBytes(mod.getBytes("DLXF"));
 			}
-		}
+		}*/
+		DiskFile src = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all\\MainMenuSkip.dll");
+		RPM rpm = new RPM(src.getIO(), "DLXF", 0, -1);
+		new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all\\out.rpm").setBytes(rpm.getBytes("DLXF"));
 	}
 
 	/**

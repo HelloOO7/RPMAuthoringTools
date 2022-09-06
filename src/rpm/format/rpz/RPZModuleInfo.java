@@ -1,7 +1,7 @@
 package rpm.format.rpz;
 
-import ctrmap.stdlib.formats.yaml.YamlNodeName;
-import ctrmap.stdlib.fs.FSFile;
+import xstandard.formats.yaml.YamlNodeName;
+import xstandard.fs.FSFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

@@ -1,8 +1,8 @@
 package rpm.format.rpm;
 
-import ctrmap.stdlib.io.base.impl.ext.data.DataIOStream;
-import ctrmap.stdlib.io.structs.StringTable;
-import ctrmap.stdlib.util.ArraysEx;
+import xstandard.io.base.impl.ext.data.DataIOStream;
+import xstandard.io.structs.StringTable;
+import xstandard.util.ArraysEx;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;

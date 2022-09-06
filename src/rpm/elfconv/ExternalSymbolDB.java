@@ -1,11 +1,11 @@
 
 package rpm.elfconv;
 
-import ctrmap.stdlib.formats.yaml.Yaml;
-import ctrmap.stdlib.formats.yaml.YamlListElement;
-import ctrmap.stdlib.formats.yaml.YamlNode;
-import ctrmap.stdlib.fs.FSFile;
-import ctrmap.stdlib.fs.accessors.DiskFile;
+import xstandard.formats.yaml.Yaml;
+import xstandard.formats.yaml.YamlListElement;
+import xstandard.formats.yaml.YamlNode;
+import xstandard.fs.FSFile;
+import xstandard.fs.accessors.DiskFile;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;

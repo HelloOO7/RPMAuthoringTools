@@ -1,10 +1,10 @@
 package rpm.format.rpz;
 
 import rpm.format.rpm.RPM;
-import ctrmap.stdlib.fs.FSFile;
-import ctrmap.stdlib.fs.accessors.DiskFile;
-import ctrmap.stdlib.io.base.impl.ext.data.DataIOStream;
-import ctrmap.stdlib.io.util.IOUtils;
+import xstandard.fs.FSFile;
+import xstandard.fs.accessors.DiskFile;
+import xstandard.io.base.impl.ext.data.DataIOStream;
+import xstandard.io.util.IOUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;

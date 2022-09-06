@@ -1,7 +1,7 @@
 package rpm.format.rpz;
 
 import rpm.format.rpm.RPM;
-import ctrmap.stdlib.fs.FSFile;
+import xstandard.fs.FSFile;
 
 public interface IRPZHandler {
 
