@@ -24,6 +24,7 @@ import rpm.format.rpm.RPMSymbol;
 import rpm.format.rpm.RPMSymbolAddress;
 import rpm.format.rpm.RPMSymbolType;
 import rpm.util.AutoRelGenerator;
+import xstandard.util.JVMClassSourceChecker;
 
 public class RPMTool {
 
@@ -39,6 +40,13 @@ public class RPMTool {
 	};
 
 	public static void main(String[] args) {
+		if (args.length == 0 && !JVMClassSourceChecker.isJAR()) {
+			args = new String[] {
+				"-i D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\MorbiusSweep\\build\\MorbiusSweep.elf",
+				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\MorbiusSweep\\build\\MorbiusSweep11.rpm",
+				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml",
+			};
+		}
 		ArgumentBuilder bld = new ArgumentBuilder(ARG_PTNS);
 		bld.parse(args);
 

@@ -74,7 +74,7 @@ public class RPMDump {
 
 					IndentedPrintStream out = new IndentedPrintStream(outstrm);
 
-					out.println(fourCC + " file | Code segment base address: 0x" + Integer.toHexString(rpm.getCodeSegmentBase()));
+					out.println(fourCC + " file | Code segment base address: 0x" + Integer.toHexString(rpm.getCodeSegmentBase()) + " | BSS size: 0x" + Integer.toHexString(rpm.bssSize));
 					out.println("Symbol count: " + rpm.symbols.size() + " | Relocation count: " + rpm.relocations.size());
 
 					if (bld.getContent("dumpsym").booleanValue()) {

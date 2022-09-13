@@ -65,13 +65,30 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 				System.out.println("Skipping section " + sec.header.name + " (idx " + elf.getSectionIndex(sec) + ")");
 			}
 		}
+		
+		List<RelElfSection> sectionsInOrder = new ArrayList<>();
+		for (RelElfSection s : sections) {
+			if (s.type == SectionType.TEXT) {
+				sectionsInOrder.add(s);
+			}
+		}
+		//BSS follows after code
+		for (RelElfSection s : sections) {
+			if (s.type != SectionType.TEXT) {
+				sectionsInOrder.add(s);
+			}
+		}
 
+		int bssSize = 0;
 		int offs = 0;
-		for (RelElfSection sec : sections) {
+		for (RelElfSection sec : sectionsInOrder) {
 			sec.prepareForRPM(rpm, offs, esdb);
 			rpmSymbols.addAll(sec.rpmSymbols);
-			offs += sec.length;
-			offs = MathEx.padInteger(offs, Integer.BYTES);
+			int alignedLength = MathEx.padInteger(sec.length, Integer.BYTES);
+			offs += alignedLength;
+			if (sec.type == SectionType.BSS) {
+				bssSize += alignedLength;
+			}
 		}
 
 		for (Map.Entry<ELFSection, ELFRelocationSectionBase<? extends ELFRelocationSectionBase.RelocationEntry>> re : relSections.entrySet()) {
@@ -169,11 +186,14 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 		io.close();
 
 		DataIOStream code = new DataIOStream();
-		for (RelElfSection s : sections) {
-			code.seek(s.targetOffset);
-			code.write(s.getBytes());
+		for (RelElfSection s : sectionsInOrder) {
+			if (s.type == SectionType.TEXT) {
+				code.seek(s.targetOffset);
+				code.write(s.getBytes());
+			}
 		}
 		rpm.setCode(code);
+		rpm.bssSize = bssSize;
 		rpm.symbols.addAll(rpmSymbols);
 
 		return rpm;

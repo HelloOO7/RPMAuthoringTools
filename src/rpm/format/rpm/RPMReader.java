@@ -24,6 +24,20 @@ class RPMReader extends DataIOStream {
 		return version >= rev;
 	}
 	
+	private int headerOffsetBase = 0;
+	
+	public void setHeaderOffsetBase(int value) {
+		this.headerOffsetBase = value;
+	}
+	
+	public int readHeaderOffset() throws IOException {
+		int offs = readInt();
+		if (offs == -1) {
+			return offs;
+		}
+		return offs + headerOffsetBase;
+	}
+	
 	private int strTableOffs = -1;
 	
 	public void setStrTableOffsHere() throws IOException {

@@ -5,7 +5,7 @@ public class RPMRevisions {
 	/**
 	 * Current revision of the RPM writer.
 	 */
-	public static final int REV_CURRENT = 10;
+	public static final int REV_CURRENT = 11;
 
 	/**
 	 * Initial version of the format.
@@ -85,4 +85,9 @@ public class RPMRevisions {
 	 * 8-byte relocation structure.
 	 */
 	public static final int REV_COMPACT_RELOCATIONS = 10;
+	
+	/**
+	 * BSS expansion on module load -> header-relative control offsets.
+	 */
+	public static final int REV_BSS_EXPANSION = 11;
 }

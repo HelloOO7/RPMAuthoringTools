@@ -31,7 +31,7 @@ public class ELF2RPM {
 			
 			if (conv != null){
 				RPM rpm = conv.getRPM(elf, esdb);
-				rpm.updateBytesForSetBaseAddr(); //relocate to base 0 for better analysis
+				rpm.updateCodeImageForBaseAddr(); //relocate to base 0 for better analysis
 				return rpm;
 			}
 		} catch (IOException ex) {

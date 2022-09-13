@@ -46,7 +46,7 @@ public class RPM {
 	public static final String META_MAGIC = "META";
 
 	public static final int RPM_PROLOG_SIZE = 0x20;
-	public static final int RPM_DLLEXEC_HEADER_SIZE = 0x10;
+	public static final int RPM_DLLEXEC_HEADER_SIZE = 0x14;
 
 	public static final int RPM_PADDING = 0x10;
 
@@ -63,6 +63,7 @@ public class RPM {
 	private RPMExternalSymbolResolver extResolver;
 
 	private DataIOStream code;
+	public int bssSize;
 
 	public RPM(FSFile fsf) {
 		this(fsf.getBytes());
@@ -109,7 +110,7 @@ public class RPM {
 				reader.seek(startPos);
 			}
 			if (StringIO.checkMagic(reader, fourCC)) { //dlxf prolog
-				int fileSize = reader.readInt();
+				int fileSize = reader.readInt(); //unpacked if version over REV_BSS_EXPANSION
 				reader.seek(reader.readInt() + startPos);
 				if (!StringIO.checkMagic(reader, RPM_DLLEXEC_HEADER_MAGIC)) {
 					throw new InvalidMagicException("Incorrect RPM DllExec header!");
@@ -136,10 +137,19 @@ public class RPM {
 			} else {
 				version = reader.readInt();
 				reader.setVersion(version);
+				if (reader.versionOver(RPMRevisions.REV_BSS_EXPANSION)) {
+					reader.setHeaderOffsetBase(reader.getPosition() - Integer.BYTES * 2);
+				}
 				if (reader.versionOver(RPMRevisions.REV_PRODUCT_INFO)) {
 					if (reader.versionOver(RPMRevisions.REV_INFO_SECTION)) {
-						infoSectionOffset = reader.readInt();
-						reader.skipBytes(4);
+						infoSectionOffset = reader.readHeaderOffset();
+						if (reader.versionOver(RPMRevisions.REV_BSS_EXPANSION)) {
+							bssSize = reader.readInt();
+							int headerSectionSize = reader.readInt();
+						}
+						else {
+							reader.skipBytes(4); //reserved
+						}
 					} else {
 						//product ID and product version fields. DISCONTINUED.
 						reader.skipBytes(8);
@@ -168,14 +178,14 @@ public class RPM {
 				if (!StringIO.checkMagic(reader, INFO_MAGIC)) {
 					throw new InvalidMagicException("INFO section not present!");
 				}
-				symbolsOffset = reader.readInt();
-				relocationsOffset = reader.readInt();
-				stringsOffset = reader.readInt();
+				symbolsOffset = reader.readHeaderOffset();
+				relocationsOffset = reader.readHeaderOffset();
+				stringsOffset = reader.readHeaderOffset();
 				if (reader.versionOver(RPMRevisions.REV_INDEPENDENT_CODE_SEG)) {
 					codeOffset = reader.readInt();
 				}
 				codeSize = reader.readInt();
-				metaDataOffset = reader.readInt();
+				metaDataOffset = reader.readHeaderOffset();
 			}
 
 			if (stringsOffset >= 0) {
@@ -200,7 +210,7 @@ public class RPM {
 					throw new InvalidMagicException("SYM section not present!");
 				}
 				if (reader.versionOver(RPMRevisions.REV_EXTERN_LISTS)) {
-					int symtabExternModuleListOffset = reader.readInt();
+					int symtabExternModuleListOffset = reader.readHeaderOffset();
 				}
 				int firstExportSymbolIdx = -1;
 				int firstImportSymbolIdx = -1;
@@ -212,7 +222,7 @@ public class RPM {
 					exportSymbolCount = reader.readUnsignedShort();
 					firstImportSymbolIdx = reader.readUnsignedShort();
 					importSymbolCount = reader.readUnsignedShort();
-					exportSymbolHashTableOffset = reader.readInt();
+					exportSymbolHashTableOffset = reader.readHeaderOffset();
 				}
 				int symbolCount = reader.aligned() ? reader.readInt() : reader.readUnsignedShort();
 				for (int i = 0; i < symbolCount; i++) {
@@ -244,13 +254,13 @@ public class RPM {
 				}
 				baseAddress = reader.readInt();
 				if (reader.versionOver(RPMRevisions.REV_SEPARATE_RELOCATIONS)) {
-					int internalRelocationsOffs = reader.readInt();
+					int internalRelocationsOffs = reader.readHeaderOffset();
 					int internalImportRelocationsOffs = -1;
 					if (reader.versionOver(RPMRevisions.REV_IMPORT_RELOCATION_LIST)) {
-						internalImportRelocationsOffs = reader.readInt();
+						internalImportRelocationsOffs = reader.readHeaderOffset();
 					}
-					int externalRelocationsOffs = reader.readInt();
-					int relocExternModuleListOffset = reader.readInt();
+					int externalRelocationsOffs = reader.readHeaderOffset();
+					int relocExternModuleListOffset = reader.readHeaderOffset();
 
 					readRelocationLists(this, reader, relocations, readExternModuleList(reader, relocExternModuleListOffset), 
 						internalImportRelocationsOffs, 
@@ -260,7 +270,7 @@ public class RPM {
 				} else {
 					String[] externModuleList = null;
 					if (reader.versionOver(RPMRevisions.REV_EXTERN_LISTS)) {
-						int relocExternModuleListOffset = reader.readInt();
+						int relocExternModuleListOffset = reader.readHeaderOffset();
 						externModuleList = readExternModuleList(reader, relocExternModuleListOffset);
 					}
 					int relocationCount = reader.readInt();
@@ -320,8 +330,10 @@ public class RPM {
 		RPM rpm = new RPM();
 		if (mirrorCode) {
 			rpm.code = source.code;
+			rpm.bssSize = source.bssSize;
 		} else {
 			rpm.code = new DataIOStream();
+			rpm.bssSize = 0;
 		}
 		if (mirrorSymAndRel) {
 			rpm.symbols = source.symbols;
@@ -380,6 +392,12 @@ public class RPM {
 			} else {
 				base = 0;
 			}
+			
+			//Move the current bss symbols to the end of the BSS
+			//The structure after the merge will therefore be:
+			// CodeA | CodeB | BssB | BssA
+			int myBssShift = MathEx.padInteger(source.code.getRawLength(), 4) + MathEx.padInteger(source.bssSize, 4);
+			int myCodeSize = code.getRawLength();
 
 			for (RPMSymbol sym : symbols) {
 				if (sym.isImportSymbol()) {
@@ -393,6 +411,10 @@ public class RPM {
 							System.out.println("Imported symbol " + newSym + " to " + sym);
 						}
 					}
+				}
+				else if (sym.isLocal() && sym.address.getAddr() >= myCodeSize) {
+					//Address beyond code size -> BSS symbol
+					sym.address.setAddr(sym.address.getAddr() + myBssShift);
 				}
 			}
 
@@ -422,6 +444,7 @@ public class RPM {
 				}
 				relocations.add(newRel);
 			}
+			bssSize += source.bssSize;
 		} catch (IOException ex) {
 			Logger.getLogger(RPM.class.getName()).log(Level.SEVERE, null, ex);
 		}
@@ -501,18 +524,23 @@ public class RPM {
 		code = buf;
 		setBaseAddrNoUpdateBytes(baseAddress);
 	}
+	
+	public byte[] getBytesForBaseOfs(int baseOfs) {
+		return getBytesForBaseOfs(baseOfs, false);
+	}
 
 	/**
 	 * Relocates the code buffer to the given base offset and returns the compiled binary, then relocates it
 	 * back.
 	 *
 	 * @param baseOfs Offset base.
+	 * @param writeBss Write the BSS as zeroes into the file.
 	 * @return
 	 */
-	public byte[] getBytesForBaseOfs(int baseOfs) {
+	public byte[] getBytesForBaseOfs(int baseOfs, boolean writeBss) {
 		byte[] origCode = code.toByteArray();
 		updateBytesForBaseAddr(baseOfs);
-		byte[] bytes = getBytes();
+		byte[] bytes = getBytes(writeBss);
 		try {
 			code.seek(0);
 			code.write(origCode);
@@ -521,16 +549,23 @@ public class RPM {
 		}
 		return bytes;
 	}
+	
+	public int getByteSize() {
+		return getByteSize(false);
+	}
 
 	/**
 	 * Calculates the exact size of the RPM image.
 	 *
+	 * @param includeBss Include the BSS size int the total.
 	 * @return
 	 */
-	public int getByteSize() {
+	public int getByteSize(boolean includeBss) {
 		int size = RPM_PROLOG_SIZE;
 
 		size += code.getRawLength();
+		size = MathEx.padInteger(size, 4);
+		size += bssSize;
 		size = MathEx.padInteger(size, RPM_PADDING);
 
 		size += RPM_DLLEXEC_HEADER_SIZE;
@@ -643,62 +678,79 @@ public class RPM {
 			s.name = null;
 		}
 	}
-
+	
 	public byte[] getBytes() {
-		return getBytes(RPM_PROLOG_MAGIC);
+		return getBytes(false);
+	}
+
+	public byte[] getBytes(boolean writeBss) {
+		return getBytes(RPM_PROLOG_MAGIC, writeBss);
+	}
+	
+	public byte[] getBytes(String ident) {
+		return getBytes(ident, false);
 	}
 
 	/**
 	 * Writes the RPM image into a byte array.
 	 *
 	 * @param ident User-defined magic signature for the file format.
+	 * @param writeBss If set, the BSS will be included within the file as a zero-filled section.
 	 * @return
 	 */
-	public byte[] getBytes(String ident) {
+	public byte[] getBytes(String ident, boolean writeBss) {
 		try {
-			RPMWriter ba = new RPMWriter();
-			ba.setAlignEnable(true);
+			RPMWriter writer = new RPMWriter();
+			writer.setAlignEnable(true);
 
-			ba.writeStringUnterminated(ident);
-			TemporaryValue fileSize = new TemporaryValue(ba);
-			TemporaryOffset rpmDataOffset = new TemporaryOffset(ba);
-			ba.writeInt(0); //m_ReserveFlags
+			writer.writeStringUnterminated(ident);
+			TemporaryValue expandSize = new TemporaryValue(writer); //m_Size
+			TemporaryOffset rpmDataOffset = new TemporaryOffset(writer); //m_Exec
+			writer.writeInt(0); //m_ReserveFlags
 			//Pointers may be 32 or 64-bit
 			//We leave 16 bytes empty for the runtime pointer fields to warrant for 8-byte pointer sizes
-			ba.writeLong(0); //m_PrevModule
-			ba.writeLong(0); //m_NextModule
+			writer.writeLong(0); //m_PrevModule
+			writer.writeLong(0); //m_NextModule
 
-			int codeOffset = ba.getPosition();
-			ba.write(code.toByteArray());
+			int codeOffset = writer.getPosition();
+			writer.write(code.toByteArray());
 			int codeSize = code.getRawLength();
-			ba.pad(RPM_PADDING);
-
+			//BSS starts here
+			if (writeBss) {
+				writer.pad(4);
+				writer.writePadding(bssSize, 0);
+			}
+			writer.pad(RPM_PADDING);
+			
 			//HEADER
+			int headerSectionStart = writer.getPosition();
 			rpmDataOffset.setHere();
-			ba.writeStringUnterminated(RPM_DLLEXEC_HEADER_MAGIC);
-			ba.writeInt(RPMRevisions.REV_CURRENT);//Format version
-			TemporaryOffset infoOffs = new TemporaryOffset(ba);
-			ba.writeInt(0); //padding
+			writer.setHeaderStartHere();
+			writer.writeStringUnterminated(RPM_DLLEXEC_HEADER_MAGIC);
+			writer.writeInt(RPMRevisions.REV_CURRENT);//Format version
+			TemporaryOffset infoOffs = writer.createTempOffset();
+			writer.writeInt(bssSize);
+			TemporaryValue headerSectionSize = new TemporaryValue(writer);
 
 			//INFO section
 			infoOffs.setHere();
-			ba.writeStringUnterminated(INFO_MAGIC); //4
-			TemporaryOffset symbOffset = new TemporaryOffset(ba); //8
-			TemporaryOffset relOffset = new TemporaryOffset(ba); //12
-			TemporaryOffset stringsOffset = new TemporaryOffset(ba); //16
-			ba.writeInt(codeOffset); //20
-			ba.writeInt(codeSize); //24
-			TemporaryOffset metaDataOffset = new TemporaryOffset(ba); //28
-			ba.writeInt(0); //reserved values - 32 bytes total
+			writer.writeStringUnterminated(INFO_MAGIC); //4
+			TemporaryOffset symbOffset = writer.createTempOffset(); //8
+			TemporaryOffset relOffset = writer.createTempOffset(); //12
+			TemporaryOffset stringsOffset = writer.createTempOffset(); //16
+			writer.writeInt(codeOffset); //20
+			writer.writeInt(codeSize); //24
+			TemporaryOffset metaDataOffset = writer.createTempOffset(); //28
+			writer.writeInt(0); //reserved values - 32 bytes total
 
-			StringTable strings = new StringTable(ba, true, true);
+			StringTable strings = new StringTable(writer, true, true);
 
 			//Metadata
 			if (metaData.getValueCount() != 0) {
 				metaDataOffset.setHere();
-				ba.writeStringUnterminated(META_MAGIC);
-				metaData.writeMetaData(ba, strings);
-				ba.pad(RPM_PADDING);
+				writer.writeStringUnterminated(META_MAGIC);
+				metaData.writeMetaData(writer, strings);
+				writer.pad(RPM_PADDING);
 			} else {
 				metaDataOffset.set(-1);
 			}
@@ -716,10 +768,10 @@ public class RPM {
 			//String table
 			if (strings.getStringCount() != 0) {
 				stringsOffset.setHere();
-				ba.writeStringUnterminated(STR_MAGIC);
+				writer.writeStringUnterminated(STR_MAGIC);
 				strings.writeTable();
 				strings.forbidFurtherWriting();
-				ba.pad(RPM_PADDING);
+				writer.pad(RPM_PADDING);
 			} else {
 				stringsOffset.set(-1);
 			}
@@ -747,31 +799,31 @@ public class RPM {
 				}
 
 				symbOffset.setHere();
-				ba.writeStringUnterminated(SYM_MAGIC);
-				TemporaryOffset symExternModuleListOffs = new TemporaryOffset(ba);
-				ba.writeShort(firstExportSymbolIdx);
-				ba.writeShort(exportSymbolCount);
-				ba.writeShort(firstImportSymbolIdx);
-				ba.writeShort(importSymbolCount);
-				TemporaryOffset exportSymbolHashTableOffs = new TemporaryOffset(ba);
-				ba.writeInt(symbols.size());
+				writer.writeStringUnterminated(SYM_MAGIC);
+				TemporaryOffset symExternModuleListOffs = writer.createTempOffset();
+				writer.writeShort(firstExportSymbolIdx);
+				writer.writeShort(exportSymbolCount);
+				writer.writeShort(firstImportSymbolIdx);
+				writer.writeShort(importSymbolCount);
+				TemporaryOffset exportSymbolHashTableOffs = writer.createTempOffset();
+				writer.writeInt(symbols.size());
 				for (RPMSymbol sym : symbols) {
-					sym.write(ba, strings);
+					sym.write(writer, strings);
 				}
 				symExternModuleListOffs.set(0); //null for now
-				ba.pad(4);
+				writer.pad(4);
 				if (firstExportSymbolIdx != -1) {
 					exportSymbolHashTableOffs.setHere();
 					for (int symIdx = firstExportSymbolIdx; symIdx < symbols.size(); symIdx++) {
 						RPMSymbol sym = symbols.get(symIdx);
 						sym.updateNameHash();
-						ba.writeInt(sym.nameHash);
+						writer.writeInt(sym.nameHash);
 						if (!sym.isExportSymbol()) {
 							break;
 						}
 					}
 				}
-				ba.pad(RPM_PADDING);
+				writer.pad(RPM_PADDING);
 			} else {
 				symbOffset.set(-1);
 			}
@@ -779,68 +831,70 @@ public class RPM {
 			//Relocation table
 			if (!relocations.isEmpty() || baseAddress != 0) {
 				relOffset.setHere();
-				ba.writeStringUnterminated(REL_MAGIC);
-				ba.writeInt(baseAddress);
+				writer.writeStringUnterminated(REL_MAGIC);
+				writer.writeInt(baseAddress);
 
 				List<String> relocExternModuleNames = new ArrayList<>();
 
-				TemporaryOffset internalRelocationsOffs = new TemporaryOffset(ba);
-				TemporaryOffset internalImportRelocationsOffs = new TemporaryOffset(ba);
-				TemporaryOffset externalRelocationsOffs = new TemporaryOffset(ba);
-				TemporaryOffset relocExternModuleListOffs = new TemporaryOffset(ba);
+				TemporaryOffset internalRelocationsOffs = writer.createTempOffset();
+				TemporaryOffset internalImportRelocationsOffs = writer.createTempOffset();
+				TemporaryOffset externalRelocationsOffs = writer.createTempOffset();
+				TemporaryOffset relocExternModuleListOffs = writer.createTempOffset();
 
 				externalRelocationsOffs.setHere();
-				TemporaryValue externalRelocationsCountValue = new TemporaryValue(ba);
+				TemporaryValue externalRelocationsCountValue = new TemporaryValue(writer);
 				int externalRelocationsCount = 0;
 				for (RPMRelocation rel : relocations) {
 					if (rel.target.isExternal()) {
-						rel.write(ba, strings, relocExternModuleNames);
+						rel.write(writer, strings, relocExternModuleNames);
 						externalRelocationsCount++;
 					}
 				}
 				externalRelocationsCountValue.set(externalRelocationsCount);
 
-				ba.pad(4);
+				writer.pad(4);
 				relocExternModuleListOffs.setHere();
-				ba.writeShort(relocExternModuleNames.size());
+				writer.writeShort(relocExternModuleNames.size());
 				for (String str : relocExternModuleNames) {
 					strings.putStringOffset(str);
 				}
 
-				ba.pad(4);
+				writer.pad(4);
 
 				internalImportRelocationsOffs.setHere();
-				TemporaryValue internalImportRelocationsCountValue = new TemporaryValue(ba);
+				TemporaryValue internalImportRelocationsCountValue = new TemporaryValue(writer);
 				int internalImportRelocationsCount = 0;
 				for (RPMRelocation rel : relocations) {
 					if (isInternalImportSymbolRel(rel)) {
-						rel.write(ba, strings, null);
+						rel.write(writer, strings, null);
 						internalImportRelocationsCount++;
 					}
 				}
 				internalImportRelocationsCountValue.set(internalImportRelocationsCount);
-				ba.pad(4);
+				writer.pad(4);
 
 				internalRelocationsOffs.setHere();
-				TemporaryValue internalRelocationsCountValue = new TemporaryValue(ba);
+				TemporaryValue internalRelocationsCountValue = new TemporaryValue(writer);
 				int internalRelocationsCount = 0;
 				for (RPMRelocation rel : relocations) {
 					if (isInternalNonImportSymbolRel(rel)) {
-						rel.write(ba, strings, null);
+						rel.write(writer, strings, null);
 						internalRelocationsCount++;
 					}
 				}
 				internalRelocationsCountValue.set(internalRelocationsCount);
 
-				ba.pad(RPM_PADDING);
+				writer.pad(RPM_PADDING);
 			} else {
 				relOffset.set(-1);
 			}
 
-			fileSize.set(ba.getLength());
+			int fileSize = writer.getLength();
+			expandSize.set(MathEx.padInteger(fileSize + bssSize, RPM_PADDING));
+			headerSectionSize.set(writer.getPosition() - headerSectionStart);
 
-			ba.close();
-			return ba.toByteArray();
+			writer.close();
+			return writer.toByteArray();
 		} catch (IOException ex) {
 			Logger.getLogger(RPM.class.getName()).log(Level.SEVERE, null, ex);
 		}
@@ -879,8 +933,9 @@ public class RPM {
 	}
 
 	public static void main(String[] args) {
-		/*DiskFile folder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all");
-		DiskFile outfolder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches");
+		DiskFile folder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all");
+		DiskFile outfolder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_v11");
+		outfolder.mkdirs();
 		for (FSFile child : folder.listFiles()) {
 			if (child.getName().endsWith(".dll") || child.getName().endsWith(".rpm")) {
 				System.out.println("Conv RPM " + child);
@@ -894,10 +949,7 @@ public class RPM {
 				RPM mod = new RPM(data);
 				outfolder.getChild(child.getNameWithoutExtension() + ".dll").setBytes(mod.getBytes("DLXF"));
 			}
-		}*/
-		DiskFile src = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all\\MainMenuSkip.dll");
-		RPM rpm = new RPM(src.getIO(), "DLXF", 0, -1);
-		new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all\\out.rpm").setBytes(rpm.getBytes("DLXF"));
+		}
 	}
 
 	/**
@@ -914,7 +966,7 @@ public class RPM {
 	/**
 	 * Updates the code image for the current address.
 	 */
-	public void updateBytesForSetBaseAddr() {
+	public void updateCodeImageForBaseAddr() {
 		relocateBufferToAddr(baseAddress);
 	}
 
@@ -973,6 +1025,10 @@ public class RPM {
 	 */
 	public static void writeRelocationDataByType(RPM rpm, RPMRelocation rel, DataIOStream out) throws IOException {
 		int addr = rel.source.getWritableAddress();
+		if (addr == -1) {
+			//Invalid address / extern
+			return;
+		}
 		boolean targetIsThumb = (addr & 1) != 0;
 
 		//System.out.println("Apply " + rel.targetType + " @ " + Integer.toHexString(out.getPosition()) + " -> " + Integer.toHexString(addr));

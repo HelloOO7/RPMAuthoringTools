@@ -40,16 +40,19 @@ public class RelElfSection {
 		this.sec = sec;
 		sourceOffset = sec.header.offset;
 		length = sec.header.size;
-		byte[] b = new byte[length];
 		if (type != SectionType.BSS) {
 			io.seek(sourceOffset);
+			byte[] b = new byte[length];
 			io.read(b);
+			buf = new DataIOStream(b);
 		}
-		buf = new DataIOStream(b);
 	}
 
 	public byte[] getBytes() {
-		return buf.toByteArray();
+		if (buf != null) {
+			return buf.toByteArray();
+		}
+		return null;
 	}
 
 	public void prepareForRPM(RPM rpm, int targetOffset, ExternalSymbolDB esdb) {
