@@ -934,7 +934,7 @@ public class RPM {
 
 	public static void main(String[] args) {
 		DiskFile folder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_all");
-		DiskFile outfolder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches_v11");
+		DiskFile outfolder = new DiskFile("D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\patches");
 		outfolder.mkdirs();
 		for (FSFile child : folder.listFiles()) {
 			if (child.getName().endsWith(".dll") || child.getName().endsWith(".rpm")) {

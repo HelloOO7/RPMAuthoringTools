@@ -18,6 +18,12 @@ public class ESDBSegmentInfo {
 		
 	}
 	
+	public ESDBSegmentInfo(int id, String name, String type) {
+		this.segmentId = id;
+		this.segmentName = name;
+		this.segmentType = type;
+	}
+	
 	public YamlNode getNode(){
 		YamlNode n = new YamlNode(new YamlListElement());
 		n.addChild("ID", segmentId, true);
