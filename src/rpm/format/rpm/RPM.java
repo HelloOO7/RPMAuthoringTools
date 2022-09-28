@@ -242,6 +242,9 @@ public class RPM {
 
 					for (int i = firstExportSymbolIdx, hashIdx = 0; i < exportSymbolEnd; i++, hashIdx++) {
 						RPMSymbol s = symbols.get(i);
+						if (s.nameHash != 0) {
+							System.out.println("Symbol " + Integer.toHexString(s.nameHash) + " already has a hash assigned!!");
+						}
 						s.nameHash = hashTable[hashIdx];
 					}
 				}

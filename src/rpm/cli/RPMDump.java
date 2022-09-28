@@ -33,8 +33,8 @@ public class RPMDump {
 	public static void main(String[] args) {
 		if (!JVMClassSourceChecker.isJAR() && args.length == 0) {
 			args = new String[]{
-				//"--fourcc DLXF",
-				"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\MorbiusSweep\\build\\MorbiusSweep.rpm",
+				"--fourcc DLXF",
+				"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\CinePlayer\\build\\CinePlayer.dll",
 				"-r -s -m"
 			};
 		}
@@ -117,9 +117,14 @@ public class RPMDump {
 
 		int symIndex = 0;
 		for (RPMSymbol sym : rpm.symbols) {
-			out.println("Symbol " + symIndex + " | " + (sym.name == null ? (sym.nameHash == 0 ? "<anonymous>" : "Hash: " + Integer.toHexString(sym.nameHash)) : sym.name));
+			out.println("Symbol " + symIndex + " | " + 
+				(sym.name == null 
+					? (sym.nameHash == 0 ? "<anonymous>" : "Hash: " + Integer.toHexString(sym.nameHash)) 
+					: sym.name + " (hash: " + Integer.toHexString(sym.nameHash) + ")"
+				)
+			);
 			out.incrementIndentLevel();
-			out.println("Address: " + sym.address.toString());
+			out.println("Address: " + (sym.isImportSymbol() ? Integer.toHexString(sym.address.getNameHash()) : sym.address.toString()));
 			out.println("Type: " + sym.type);
 			out.println("Size: " + sym.size);
 			out.print("Attributes: [");
