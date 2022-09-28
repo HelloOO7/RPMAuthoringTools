@@ -40,9 +40,9 @@ public class MAP2ESDB {
 	public static void main(String[] args) {
 		if (!JVMClassSourceChecker.isJAR() && args.length == 0) {
 			args = new String[]{
-				"-i \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\arm9-white2_decompressed_U.map\"",
-				"-t \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\arm9-white2_decompressed_U.thm\"",
-				"-a \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\arm9-white2_decompressed_U.alias\"",
+				"-i \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\Field.map\"",
+				"-t \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\Field.thm\"",
+				"-a \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\Field.alias\"",
 				"-m \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb_293.yml\"",
 				"-o \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml\""
 			};

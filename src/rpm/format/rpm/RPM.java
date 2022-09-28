@@ -673,7 +673,7 @@ public class RPM {
 				s.updateNameHash();
 				//System.out.println("export symbol " + s.name + " hash " + Integer.toHexString(s.nameHash));
 			} else if (s.isImportSymbol()) {
-				System.out.println("import symbol " + s.name + " hash " + Integer.toHexString(s.address.getNameHash()));
+				//System.out.println("import symbol " + s.name + " hash " + Integer.toHexString(s.address.getNameHash()));
 			}
 			s.name = null;
 		}
