@@ -22,6 +22,7 @@ import xstandard.io.structs.TemporaryValue;
 import xstandard.math.MathEx;
 import xstandard.util.ArraysEx;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 
@@ -67,6 +68,10 @@ public class RPM {
 
 	public RPM(FSFile fsf) {
 		this(fsf.getBytes());
+	}
+
+	public RPM(FSFile fsf, String fourCC) {
+		this(fsf.getBytes(), fourCC);
 	}
 
 	public DataIOStream getCodeStream() {
@@ -146,8 +151,7 @@ public class RPM {
 						if (reader.versionOver(RPMRevisions.REV_BSS_EXPANSION)) {
 							bssSize = reader.readInt();
 							int headerSectionSize = reader.readInt();
-						}
-						else {
+						} else {
 							reader.skipBytes(4); //reserved
 						}
 					} else {
@@ -265,9 +269,9 @@ public class RPM {
 					int externalRelocationsOffs = reader.readHeaderOffset();
 					int relocExternModuleListOffset = reader.readHeaderOffset();
 
-					readRelocationLists(this, reader, relocations, readExternModuleList(reader, relocExternModuleListOffset), 
-						internalImportRelocationsOffs, 
-						internalRelocationsOffs, 
+					readRelocationLists(this, reader, relocations, readExternModuleList(reader, relocExternModuleListOffset),
+						internalImportRelocationsOffs,
+						internalRelocationsOffs,
 						externalRelocationsOffs
 					);
 				} else {
@@ -297,7 +301,11 @@ public class RPM {
 	}
 
 	public RPM(byte[] bytes) {
-		this(new DataIOStream(bytes), 0, bytes.length);
+		this(bytes, null);
+	}
+
+	public RPM(byte[] bytes, String fourCC) {
+		this(new DataIOStream(bytes), fourCC, 0, bytes.length);
 	}
 
 	public RPM() {
@@ -316,7 +324,7 @@ public class RPM {
 		reader.resetCheckpoint();
 		return ret;
 	}
-	
+
 	private static void readRelocationLists(RPM rpm, RPMReader reader, List<RPMRelocation> dest, String[] externModuleList, int... listOffsets) throws IOException {
 		for (int lo : listOffsets) {
 			if (lo != -1) {
@@ -349,18 +357,23 @@ public class RPM {
 		return rpm;
 	}
 
+	public static boolean isRPM(FSFile f) {
+		return isRPM(f, RPM_PROLOG_MAGIC);
+	}
+
 	/**
 	 * Checks if a FSFile contains an RPM.
 	 *
 	 * @param f The FSFile.
+	 * @param prologMagic Expected magic of the RPM prolog.
 	 * @return True if the file can be read as an RPM.
 	 */
-	public static boolean isRPM(FSFile f) {
+	public static boolean isRPM(FSFile f, String prologMagic) {
 		if (f.isFile() && f.length() > 0x10) {
 			try {
 				DataIOStream io = f.getDataIOStream();
 
-				boolean rsl = StringIO.checkMagic(io, RPM_PROLOG_MAGIC);
+				boolean rsl = StringIO.checkMagic(io, prologMagic);
 
 				if (!rsl) {
 					io.seek(f.length() - RPM_FOOTER_SIZE);
@@ -395,7 +408,7 @@ public class RPM {
 			} else {
 				base = 0;
 			}
-			
+
 			//Move the current bss symbols to the end of the BSS
 			//The structure after the merge will therefore be:
 			// CodeA | CodeB | BssB | BssA
@@ -414,8 +427,7 @@ public class RPM {
 							System.out.println("Imported symbol " + newSym + " to " + sym);
 						}
 					}
-				}
-				else if (sym.isLocal() && sym.address.getAddr() >= myCodeSize) {
+				} else if (sym.isLocal() && sym.address.getAddr() >= myCodeSize) {
 					//Address beyond code size -> BSS symbol
 					sym.address.setAddr(sym.address.getAddr() + myBssShift);
 				}
@@ -527,7 +539,7 @@ public class RPM {
 		code = buf;
 		setBaseAddrNoUpdateBytes(baseAddress);
 	}
-	
+
 	public byte[] getBytesForBaseOfs(int baseOfs) {
 		return getBytesForBaseOfs(baseOfs, false);
 	}
@@ -552,7 +564,7 @@ public class RPM {
 		}
 		return bytes;
 	}
-	
+
 	public int getByteSize() {
 		return getByteSize(false);
 	}
@@ -681,7 +693,47 @@ public class RPM {
 			s.name = null;
 		}
 	}
-	
+
+	public void stripUnusedSymbols() {
+		HashSet<RPMSymbol> usedSymbols = new HashSet<>();
+		for (RPMRelocation rel : relocations) {
+			usedSymbols.add(rel.source.symb);
+		}
+		for (int i = 0; i < symbols.size(); i++) {
+			RPMSymbol s = symbols.get(i);
+			if (!s.isExportSymbol()) {
+				if (!usedSymbols.contains(s)) {
+					symbols.remove(i);
+					i--;
+				}
+			}
+		}
+	}
+
+	public void stripIdleInternalRelocations() {
+		for (int i = 0; i < relocations.size(); i++) {
+			RPMRelocation r = relocations.get(i);
+			if (r.target.isInternal()) {
+				if (r.target.targetType.isSelfRelative()) {
+					if (r.source.symb.isLocal()) {
+						if (r.source.symb.address.getAddr() < code.getRawLength()) {
+							//local symbol not inside BSS pointing to local symbol
+							//System.out.println("removing relocation " + r);
+							relocations.remove(i);
+							i--;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public void strip() {
+		stripIdleInternalRelocations();
+		stripUnusedSymbols();
+		stripSymbolNames();
+	}
+
 	public byte[] getBytes() {
 		return getBytes(false);
 	}
@@ -689,7 +741,7 @@ public class RPM {
 	public byte[] getBytes(boolean writeBss) {
 		return getBytes(RPM_PROLOG_MAGIC, writeBss);
 	}
-	
+
 	public byte[] getBytes(String ident) {
 		return getBytes(ident, false);
 	}
@@ -724,7 +776,7 @@ public class RPM {
 				writer.writePadding(bssSize, 0);
 			}
 			writer.pad(RPM_PADDING);
-			
+
 			//HEADER
 			int headerSectionStart = writer.getPosition();
 			rpmDataOffset.setHere();
@@ -988,7 +1040,7 @@ public class RPM {
 	 * @param relocator The external relocator to use.
 	 */
 	public void doExternalRelocations(RPMExternalRelocator relocator) {
-		System.out.println("Beginning external relocation. Base address: " + Integer.toHexString(baseAddress));
+		System.out.println("Beginning external relocation. Base address: " + Integer.toHexString(getCodeSegmentBase()));
 		for (RPMRelocation rel : relocations) {
 			if (rel.target.isExternal()) {
 				relocator.processExternalRelocation(this, rel);
@@ -1034,7 +1086,7 @@ public class RPM {
 		}
 		boolean targetIsThumb = (addr & 1) != 0;
 
-		//System.out.println("Apply " + rel.targetType + " @ " + Integer.toHexString(out.getPosition()) + " -> " + Integer.toHexString(addr));
+		//System.out.println("Apply " + rel.target.targetType + " @ " + Integer.toHexString(out.getPosition()) + " -> " + Integer.toHexString(addr));
 		switch (rel.target.targetType) {
 			case ARM_BRANCH_LINK:
 				if (targetIsThumb) {
@@ -1045,7 +1097,7 @@ public class RPM {
 				}
 				break;
 			case THUMB_BRANCH_LINK:
-				System.out.println("Thumb branch from " + Integer.toHexString(out.getPosition()) + " to " + Integer.toHexString(addr) + " thumb: " + targetIsThumb);
+				//System.out.println("Thumb branch from " + Integer.toHexString(out.getPosition()) + " to " + Integer.toHexString(addr) + " thumb: " + targetIsThumb);
 				ThumbAssembler.writeBranchLinkInstruction(out, addr, !targetIsThumb);
 				break;
 			case OFFSET:
@@ -1055,6 +1107,9 @@ public class RPM {
 				if (!targetIsThumb) {
 					ARMAssembler.writeBranchInstruction(out, addr, false);
 				} else {
+					if (true) {
+						throw new RuntimeException("Impossible ARM branch!! @ 0x" + Integer.toHexString(out.getPositionUnbased()));
+					}
 					//TODO SOLVE STACK STUFF FOR ARM TOO
 					ARMAssembler.writeBlockDataTransferInstruction(out, true, false, false, true, false, ARMAssembler.ARM_STACKPTR_REG_NUM, ARMAssembler.ARMCondition.AL, ARMAssembler.ARM_LINK_REG_NUM);
 					ARMAssembler.writeBLXInstruction(out, addr);

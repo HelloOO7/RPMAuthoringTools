@@ -317,7 +317,7 @@ public class RPZ extends FSFileAdapter {
 		execRpm.metaData.putValue(new RPMMetaData.RPMMetaValue(RPM_MVK_RPZ_PRODUCT_ID, getProductId()));
 		execRpm.metaData.putValue(new RPMMetaData.RPMMetaValue(RPM_MVK_RPZ_PRODUCT_VERSION, getVersion().number));
 		if (module.stripSymbolNames){
-			execRpm.stripSymbolNames();
+			execRpm.strip();
 		}
 
 		if (!handler.installRPM(execRpm)) {

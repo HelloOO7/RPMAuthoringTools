@@ -43,6 +43,7 @@ public class RPMSymbol {
 		type = source.type;
 		address = new RPMSymbolAddress(rpm, source.address);
 		size = source.size;
+		attributes = source.attributes;
 	}
 
 	public RPMSymbol(RPM rpm, String name, RPMSymbolType type, RPMSymbolAddress addr) {

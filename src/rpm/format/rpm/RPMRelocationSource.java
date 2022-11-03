@@ -68,4 +68,9 @@ public class RPMRelocationSource {
 	public int getDataSize() {
 		return 2;
 	}
+	
+	@Override
+	public String toString() {
+		return symb.toString();
+	}
 }

@@ -31,24 +31,33 @@ public class RPMTool {
 	private static final ArgumentPattern[] ARG_PTNS = new ArgumentPattern[]{
 		new ArgumentPattern("input", "Input files (can be ELF or RPM).", ArgumentType.STRING, null, true, "-i", "--input"),
 		new ArgumentPattern("output", "The output RPM file.", ArgumentType.STRING, null, "-o", "--output"),
+		new ArgumentPattern("fourcc", "Override the recognized RPM format signature.", ArgumentType.STRING, RPM.RPM_PROLOG_MAGIC, "--fourcc"),
 		new ArgumentPattern("esdb", "An external symbol database for ELF conversion.", ArgumentType.STRING, null, "--esdb"),
 		new ArgumentPattern("mapfile", "A MAP file to export RPM symbols into.", ArgumentType.STRING, null, "--mapfile"),
 		new ArgumentPattern("inrelfile", "An YML file to import external relocations from.", ArgumentType.STRING, null, "--in-relocations-yml"),
 		new ArgumentPattern("outrelfile", "An YML file to export external relocations into.", ArgumentType.STRING, null, "--out-relocations-yml"),
 		new ArgumentPattern("genreloc", "Generate relocation data from special function names.", ArgumentType.BOOLEAN, false, "--generate-relocations"),
-		new ArgumentPattern("strip", "Strip all symbol name strings.", ArgumentType.BOOLEAN, false, "--strip-symbol-names")
+		new ArgumentPattern("strip", "Strip excess symbols and name strings.", ArgumentType.BOOLEAN, false, "--strip")
 	};
 
 	public static void main(String[] args) {
 		if (args.length == 0 && !JVMClassSourceChecker.isJAR()) {
+			/*args = new String[]{
+				"-i D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\NitroKernel\\build\\NitroKernel.elf",
+				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\NitroKernel\\build\\NitroKernel.dll",
+				"--fourcc DLXF",
+				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml",};*/
 			args = new String[] {
-				"-i D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\MorbiusSweep\\build\\MorbiusSweep.elf",
-				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\MorbiusSweep\\build\\MorbiusSweep11.rpm",
+				"-i D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\PMC\\build\\PMC.elf",
+				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\PMC\\build\\PMC.rpm",
 				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml",
+				"--generate-relocations",
 			};
 		}
 		ArgumentBuilder bld = new ArgumentBuilder(ARG_PTNS);
 		bld.parse(args);
+
+		String fourCC = bld.getContent("fourcc").stringValue();
 
 		try {
 			ArgumentContent input = bld.getContent("input", true);
@@ -80,6 +89,8 @@ public class RPMTool {
 
 					if (RPM.isRPM(inDf)) {
 						rpm.merge(new RPM(inDf));
+					} else if (!fourCC.equals(RPM.RPM_PROLOG_MAGIC) && RPM.isRPM(inDf, fourCC)) {
+						rpm.merge(new RPM(inDf, fourCC));
 					} else {
 						isElf = true;
 						rpm.merge(ELF2RPM.getRPM(new DiskFile(input.stringValue(i)), esdb == null ? new ExternalSymbolDB() : esdb));
@@ -94,15 +105,14 @@ public class RPMTool {
 					}
 				}
 				if (bld.getContent("strip").booleanValue()) {
-					rpm.stripSymbolNames();
-					System.out.println("Stripped symbol names.");
+					rpm.strip();
+					System.out.println("Stripped executable.");
 				}
 				if (bld.hasArgument("inrelfile")) {
 					FSFile inrelfile = new DiskFile(bld.getContent("inrelfile").stringValue());
 					if (inrelfile.isFile()) {
 						System.out.println("Could not read external relocation YML!");
-					}
-					else {
+					} else {
 						readRelocationsFromYml(rpm, inrelfile);
 					}
 				}
@@ -110,8 +120,7 @@ public class RPMTool {
 					FSFile outrelfile = new DiskFile(bld.getContent("outrelfile").stringValue());
 					if (!outrelfile.isDirectory() && outrelfile.canWrite()) {
 						writeRelocationsAsYml(rpm, outrelfile);
-					}
-					else {
+					} else {
 						System.out.println("Can not write to external relocation YML!");
 					}
 				}
@@ -122,15 +131,14 @@ public class RPMTool {
 				}
 
 				if (isElf || input.contents.size() > 1) {
-					FSUtil.writeBytesToFile(new File(outPath), rpm.getBytes());
+					FSUtil.writeBytesToFile(new File(outPath), rpm.getBytes(fourCC));
 				}
 			} else {
 				System.out.println("No input given.\n");
 				printHelp(bld);
 			}
 		} catch (Exception ex) {
-			System.out.println(ex.getMessage());
-			System.out.println();
+			ex.printStackTrace();
 			printHelp(bld);
 		}
 	}

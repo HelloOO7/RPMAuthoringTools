@@ -109,4 +109,9 @@ public class RPMRelocationTarget {
 		out.write(externIdx);
 		out.write(targetType.ordinal());
 	}
+	
+	@Override
+	public String toString() {
+		return targetType + "@" + this.module + ": 0x" + Integer.toHexString(address);
+	}
 }

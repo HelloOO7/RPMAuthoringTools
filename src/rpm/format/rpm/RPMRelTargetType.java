@@ -45,4 +45,15 @@ public enum RPMRelTargetType {
 		return null;
 	}
 	
+	public boolean isSelfRelative() {
+		switch (this) {
+			case ARM_BRANCH:
+			case ARM_BRANCH_LINK:
+			case THUMB_BRANCH:
+			case THUMB_BRANCH_LINK:
+			case THUMB_BRANCH_SAFESTACK:
+				return true;
+		}
+		return false;
+	}
 }

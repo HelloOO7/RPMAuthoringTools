@@ -98,6 +98,11 @@ public class RPMRelocation {
 	public int getSize() {
 		return 8;
 	}
+	
+	@Override
+	public String toString() {
+		return target + " -> " + source;
+	}
 
 	/**
 	 * Type of the provider of the address that the relocated field points to.

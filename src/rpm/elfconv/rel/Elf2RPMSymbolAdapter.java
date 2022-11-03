@@ -18,7 +18,7 @@ public class Elf2RPMSymbolAdapter extends RPMSymbol {
 		type = getRpmSymType(origin.getSymType());
 		if (name != null && origin.getVisibility() == ELFSymbolSection.ELFSymbolVisibility.DEFAULT && origin.sectionIndex != 0) { //nonextern default visibility symbol
 			attributes |= RPM_SYMATTR_EXPORT;
-			System.out.println("Export symbol " + name);
+			//System.out.println("Export symbol " + name);
 		}
 	}
 
@@ -40,7 +40,7 @@ public class Elf2RPMSymbolAdapter extends RPMSymbol {
 			case FUNC:
 			case NOTYPE:
 			case OBJECT:
-//			case ElfSymbol.STT_SECTION:
+			case SECTION:
 				return true;
 		}
 		return false;
