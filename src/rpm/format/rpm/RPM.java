@@ -8,6 +8,7 @@ import xstandard.io.util.StringIO;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -422,14 +423,13 @@ public class RPM {
 						RPMSymbol newSym = source.getSymbol(sym.name);
 						if (newSym != null && !newSym.isImportSymbol()) {
 							sym.clearAttribute(RPMSymbol.RPM_SYMATTR_IMPORT);
-							sym.address = new RPMSymbolAddress(this, newSym.address);
-							sym.address.setAddr(sym.address.getAddr() + base);
+							sym.address += base;
 							System.out.println("Imported symbol " + newSym + " to " + sym);
 						}
 					}
-				} else if (sym.isLocal() && sym.address.getAddr() >= myCodeSize) {
+				} else if (sym.isLocal() && sym.address >= myCodeSize) {
 					//Address beyond code size -> BSS symbol
-					sym.address.setAddr(sym.address.getAddr() + myBssShift);
+					sym.address += myBssShift;
 				}
 			}
 
@@ -446,7 +446,7 @@ public class RPM {
 					}
 				}
 				if (newSymbol.isLocal()) {
-					newSymbol.address.setAddr(base + newSymbol.address.getAddr());
+					newSymbol.address += base;
 				}
 				symbols.add(newSymbol);
 				oldToNewSymbolMap.put(symbol, newSymbol);
@@ -475,7 +475,7 @@ public class RPM {
 
 		for (RPMSymbol symb : symbols) {
 			if (!symb.isImportSymbol()) {
-				int addr = symb.address.getAddrAbs();
+				int addr = symb.getAddrAbs();
 				if (addr < baseAddress || addr > baseAddress + code.getLength()) {
 					//continue; //external symbol
 				}
@@ -686,7 +686,7 @@ public class RPM {
 		for (RPMSymbol s : symbols) {
 			if (s.isExportSymbol()) {
 				s.updateNameHash();
-				//System.out.println("export symbol " + s.name + " hash " + Integer.toHexString(s.nameHash));
+				System.out.println("export symbol " + s.name + " hash " + Integer.toHexString(s.nameHash));
 			} else if (s.isImportSymbol()) {
 				//System.out.println("import symbol " + s.name + " hash " + Integer.toHexString(s.address.getNameHash()));
 			}
@@ -716,7 +716,7 @@ public class RPM {
 			if (r.target.isInternal()) {
 				if (r.target.targetType.isSelfRelative()) {
 					if (r.source.symb.isLocal()) {
-						if (r.source.symb.address.getAddr() < code.getRawLength()) {
+						if (r.source.symb.address < code.getRawLength()) {
 							//local symbol not inside BSS pointing to local symbol
 							//System.out.println("removing relocation " + r);
 							relocations.remove(i);
@@ -810,7 +810,7 @@ public class RPM {
 				metaDataOffset.set(-1);
 			}
 
-			sortSymbolsForExport();
+			prepareSymbolsForExport();
 
 			//Pre-populate string table
 			for (RPMSymbol sym : symbols) {
@@ -871,7 +871,6 @@ public class RPM {
 					exportSymbolHashTableOffs.setHere();
 					for (int symIdx = firstExportSymbolIdx; symIdx < symbols.size(); symIdx++) {
 						RPMSymbol sym = symbols.get(symIdx);
-						sym.updateNameHash();
 						writer.writeInt(sym.nameHash);
 						if (!sym.isExportSymbol()) {
 							break;
@@ -966,25 +965,39 @@ public class RPM {
 			&& !(rel.source.symb.isImportSymbol());
 	}
 
-	private void sortSymbolsForExport() {
+	private void prepareSymbolsForExport() {
+		Arrays.binarySearch(new int[0], 1);
 		List<RPMSymbol> sorted = new ArrayList<>(symbols.size());
 		for (RPMSymbol s : symbols) {
 			if (!(s.isImportSymbol() || s.isExportSymbol())) {
 				sorted.add(s); //internal symbols
 			}
 		}
+		List<RPMSymbol> exportSymbols = new ArrayList<>();
 		for (RPMSymbol s : symbols) {
 			if (s.isExportSymbol()) {
-				sorted.add(s); //internal export symbols
+				s.updateNameHash();
+				exportSymbols.add(s); //internal export symbols
 			}
 		}
+		sortSymbolsByHash(exportSymbols);
+		sorted.addAll(exportSymbols);
+		List<RPMSymbol> importSymbols = new ArrayList<>();
 		for (RPMSymbol s : symbols) {
 			if (s.isImportSymbol()) {
-				sorted.add(s); //import symbols
+				importSymbols.add(s); //import symbols
 			}
 		}
+		sortSymbolsByHash(importSymbols);
+		sorted.addAll(importSymbols);
 		symbols.clear();
 		symbols.addAll(sorted);
+	}
+	
+	private static void sortSymbolsByHash(List<RPMSymbol> symbols) {
+		symbols.sort((o1, o2) -> {
+			return Integer.compareUnsigned(o1.nameHash, o2.nameHash);
+		});
 	}
 
 	public static void main(String[] args) {
@@ -1224,7 +1237,7 @@ public class RPM {
 	public RPMSymbol findGlobalSymbolByAddrAbs(int addr) {
 		for (RPMSymbol s : symbols) {
 			if (s.isGlobal()) {
-				if (s.address.getAddrAbs() == addr) {
+				if (s.getAddrAbs() == addr) {
 					return s;
 				}
 			}

@@ -1,5 +1,6 @@
 package rpm.elfconv.rel;
 
+import rpm.format.rpm.RPM;
 import xstandard.arm.elf.format.sections.ELFSymbolSection;
 import rpm.format.rpm.RPMSymbol;
 import rpm.format.rpm.RPMSymbolType;
@@ -11,7 +12,8 @@ public class Elf2RPMSymbolAdapter extends RPMSymbol {
 
 	public ELFSymbolSection.ELFSymbol origin;
 
-	public Elf2RPMSymbolAdapter(ELFSymbolSection.ELFSymbol origin) {
+	public Elf2RPMSymbolAdapter(RPM rpm, ELFSymbolSection.ELFSymbol origin) {
+		super(rpm);
 		this.origin = origin;
 		name = origin.name;
 		size = origin.size;

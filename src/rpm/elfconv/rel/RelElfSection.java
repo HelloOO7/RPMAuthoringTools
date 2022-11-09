@@ -9,7 +9,6 @@ import xstandard.arm.elf.format.ELF;
 import xstandard.arm.elf.format.sections.ELFSection;
 import xstandard.arm.elf.format.sections.ELFSymbolSection;
 import rpm.format.rpm.RPM;
-import rpm.format.rpm.RPMSymbolAddress;
 import rpm.format.rpm.RPMSymbolType;
 import xstandard.io.base.impl.ext.data.DataIOStream;
 
@@ -81,7 +80,7 @@ public class RelElfSection {
 			if (smb.sectionIndex == id) {
 				if ((smb.name == null || !smb.name.startsWith("$")) && Elf2RPMSymbolAdapter.acceptsSymType(smb.getSymType())) {
 					//System.out.println("Converting ELF symbol " + smb.name + " type " + smb.getSymType());
-					Elf2RPMSymbolAdapter s = new Elf2RPMSymbolAdapter(smb);
+					Elf2RPMSymbolAdapter s = new Elf2RPMSymbolAdapter(rpm, smb);
 
 					if (s.origin.sectionIndex == 0 && s.name != null && esdb.isFuncExternal(s.name)) {
 						//System.out.println("Extern func " + s.name + " (cur symtype: " + s.type + ")");
@@ -91,10 +90,10 @@ public class RelElfSection {
 							off--;
 							s.type = RPMSymbolType.FUNCTION_THM;
 						}
-						s.address = new RPMSymbolAddress(rpm, RPMSymbolAddress.RPMAddrType.GLOBAL, off);
+						s.setAddress(off, true);
 					} else {
 						if (id == 0) {
-							s.address = new RPMSymbolAddress(rpm, s.name); //null address. Name will be hashed, so it can be stripped freely.
+							s.setAddressImportHash(s.name);
 							if (s.name != null) {
 								s.addAttribute(Elf2RPMSymbolAdapter.RPM_SYMATTR_IMPORT);
 							}
@@ -104,7 +103,7 @@ public class RelElfSection {
 								s.type = RPMSymbolType.FUNCTION_THM;
 								sval--;
 							}
-							s.address = new RPMSymbolAddress(rpm, RPMSymbolAddress.RPMAddrType.LOCAL, sval);
+							s.setAddress(sval, false);
 						}
 					}
 					rpmSymbols.add(s);

@@ -271,7 +271,7 @@ public class ExecElfSection {
 	
 	private RPMSymbol findRPMFuncByAddr(int addr){
 		for (RPMSymbol s : rpm.symbols){
-			if (s.type.isFunction() && !s.isImportSymbol() && s.address.getAddrAbs() == addr){
+			if (s.type.isFunction() && !s.isImportSymbol() && s.getAddrAbs() == addr){
 				return s;
 			}
 		}

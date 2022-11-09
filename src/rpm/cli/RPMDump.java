@@ -34,7 +34,7 @@ public class RPMDump {
 		if (!JVMClassSourceChecker.isJAR() && args.length == 0) {
 			args = new String[]{
 				"--fourcc DLXF",
-				"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\CinePlayer\\build\\CinePlayer.dll",
+				"D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\lib\\ExtLib.Media.Cinepak.dll",
 				"-r -s -m"
 			};
 		}
@@ -124,13 +124,13 @@ public class RPMDump {
 				)
 			);
 			out.incrementIndentLevel();
-			out.println("Address: " + (sym.isImportSymbol() ? Integer.toHexString(sym.address.getNameHash()) : sym.address.toString()));
+			out.println("Address: " + Integer.toHexString(sym.address));
 			out.println("Type: " + sym.type);
 			out.println("Size: " + sym.size);
 			out.print("Attributes: [");
 
-			int[] ATTRS = new int[]{RPMSymbol.RPM_SYMATTR_EXPORT, RPMSymbol.RPM_SYMATTR_IMPORT};
-			String[] ATTRS_NAMES = new String[]{"Export symbol", "Import symbol"};
+			int[] ATTRS = new int[]{RPMSymbol.RPM_SYMATTR_EXPORT, RPMSymbol.RPM_SYMATTR_IMPORT, RPMSymbol.RPM_SYMATTR_GLOBAL};
+			String[] ATTRS_NAMES = new String[]{"Export symbol", "Import symbol", "Global symbol"};
 
 			boolean added = false;
 			for (int i = 0; i < ATTRS.length; i++) {

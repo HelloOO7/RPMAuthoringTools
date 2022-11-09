@@ -19,7 +19,7 @@ import rpm.format.rpm.RPMSymbol;
 import rpm.elfconv.IElf2RpmConverter;
 import rpm.format.rpm.RPMRelTargetType;
 import rpm.format.rpm.RPMRelocationTarget;
-import rpm.format.rpm.RPMSymbolAddress;
+import rpm.format.rpm.RPMSymbolAddressCompat;
 import rpm.format.rpm.RPMSymbolType;
 import xstandard.arm.ARMAssembler;
 import xstandard.arm.elf.format.sections.ELFRelocationSection;
@@ -47,8 +47,8 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 
 		for (ELFSymbolSection.ELFSymbol sym : symbs.symbols) { //convert absolute symbols
 			if (sym.getSpecialSectionIndex() == ELFSymbolSection.ELFSpecialSectionIndex.ABS && Elf2RPMSymbolAdapter.acceptsSymType(sym.getSymType())) {
-				Elf2RPMSymbolAdapter adapter = new Elf2RPMSymbolAdapter(sym);
-				adapter.address = new RPMSymbolAddress(rpm, RPMSymbolAddress.RPMAddrType.GLOBAL, sym.value);
+				Elf2RPMSymbolAdapter adapter = new Elf2RPMSymbolAdapter(rpm, sym);
+				adapter.setAddress(sym.value, true);
 				if ((sym.value & 1) != 0 && adapter.type == RPMSymbolType.FUNCTION_ARM) {
 					makeSymThmFunc(adapter);
 				}
@@ -178,7 +178,7 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 								if (s.name != null) {
 									s.name += "_+0x" + Integer.toHexString(addend);
 								}
-								s.address.setAddr(s.address.getAddr() + addend);
+								s.address += addend;
 								
 								//System.out.println("Notfound fixup addr " + Integer.toHexString(s.address.getAddr()));
 								rpm.symbols.add(s);
@@ -262,7 +262,7 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 		if (sym.type != RPMSymbolType.FUNCTION_THM) {
 			sym.type = RPMSymbolType.FUNCTION_THM;
 			if (!sym.isImportSymbol()) {
-				sym.address.setAddr(sym.address.getAddr() & 0xFFFFFFFE);
+				sym.address &= 0xFFFFFFFE;
 			}
 		}
 	}

@@ -12,7 +12,7 @@ import xstandard.arm.elf.format.sections.ELFSection;
 import xstandard.arm.elf.format.sections.ELFSymbolSection;
 import rpm.elfconv.rel.Elf2RPMSymbolAdapter;
 import rpm.format.rpm.RPM;
-import rpm.format.rpm.RPMSymbolAddress;
+import rpm.format.rpm.RPMSymbolAddressCompat;
 import rpm.format.rpm.RPMSymbolType;
 import rpm.elfconv.IElf2RpmConverter;
 import xstandard.io.base.impl.ext.data.DataIOStream;
@@ -43,19 +43,19 @@ public class ETExec2RPMConverter implements IElf2RpmConverter {
 
 		for (ELFSymbolSection.ELFSymbol smb : elf.sectionsByClass(ELFSymbolSection.class).get(0).symbols) {
 			if (!smb.name.startsWith("$") && acceptsSymType(smb.getSymType())) {
-				Elf2RPMSymbolAdapter s = new Elf2RPMSymbolAdapter(smb);
+				Elf2RPMSymbolAdapter s = new Elf2RPMSymbolAdapter(rpm, smb);
 				s.name = smb.name;
 				s.type = getRpmSymType(smb.getSymType());
 
 				if (s.name != null && esdb.isFuncExternal(s.name)) {
-					s.address = new RPMSymbolAddress(rpm, RPMSymbolAddress.RPMAddrType.GLOBAL, esdb.getOffsetOfFunc(s.name));
+					s.setAddress(esdb.getOffsetOfFunc(s.name), true);
 				} else {
 					int smbValue = (int) smb.value;
 					if ((smbValue & 1) != 0 && s.type == RPMSymbolType.FUNCTION_ARM){
 						s.type = RPMSymbolType.FUNCTION_THM;
 						smbValue--;
 					}
-					s.address = new RPMSymbolAddress(rpm, RPMSymbolAddress.RPMAddrType.LOCAL, smbValue - relocState.getSourceSectionOffsetById(smb.sectionIndex) + relocState.getTargetSectionOffsetById(smb.sectionIndex));
+					s.setAddress(smbValue - relocState.getSourceSectionOffsetById(smb.sectionIndex) + relocState.getTargetSectionOffsetById(smb.sectionIndex), false);
 				}
 				rpm.symbols.add(s);
 			}

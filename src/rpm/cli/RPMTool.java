@@ -21,7 +21,6 @@ import rpm.format.rpm.RPMRelocation;
 import rpm.format.rpm.RPMRelocationSource;
 import rpm.format.rpm.RPMRelocationTarget;
 import rpm.format.rpm.RPMSymbol;
-import rpm.format.rpm.RPMSymbolAddress;
 import rpm.format.rpm.RPMSymbolType;
 import rpm.util.AutoRelGenerator;
 import xstandard.util.JVMClassSourceChecker;
@@ -164,7 +163,7 @@ public class RPMTool {
 				int srcAddr = rel.getChildIntValue("SourceAddress");
 				s = destRPM.findGlobalSymbolByAddrAbs(srcAddr);
 				if (s == null) {
-					s = new RPMSymbol(destRPM, "SYM_" + Integer.toHexString(srcAddr), RPMSymbolType.VALUE, new RPMSymbolAddress(destRPM, RPMSymbolAddress.RPMAddrType.GLOBAL, srcAddr));
+					s = new RPMSymbol(destRPM, "SYM_" + Integer.toHexString(srcAddr), RPMSymbolType.VALUE, srcAddr, true);
 					destRPM.symbols.add(s);
 				}
 			} else {

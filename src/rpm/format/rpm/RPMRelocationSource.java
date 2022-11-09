@@ -39,7 +39,7 @@ public class RPMRelocationSource {
 		if (symb.isImportSymbol()) {
 			return -1;
 		}
-		return symb.address.getAddrAbs();
+		return symb.getAddrAbs();
 	}
 
 	public void write(DataOutput out, StringTable strtab) throws IOException {
@@ -47,7 +47,7 @@ public class RPMRelocationSource {
 	}
 
 	public int getAddress() {
-		return symb.isImportSymbol() ? -1 : symb.address.getAddr();
+		return symb.isImportSymbol() ? -1 : symb.address;
 	}
 
 	public int getWritableAddress() {

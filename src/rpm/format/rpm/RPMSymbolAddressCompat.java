@@ -5,43 +5,14 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class RPMSymbolAddress {
+public class RPMSymbolAddressCompat {
 	
 	private int bits;
 	private final RPM rpm;
 	
-	public RPMSymbolAddress(RPM rpm, DataInput in) throws IOException{
+	public RPMSymbolAddressCompat(RPM rpm, DataInput in) throws IOException{
 		this.rpm = rpm;
 		bits = in.readInt();
-	}
-	
-	public RPMSymbolAddress(RPM rpm, RPMAddrType t, int addr){
-		this.rpm = rpm;
-		setAddr(addr);
-		setAddrType(t);
-	}
-	
-	public RPMSymbolAddress(RPM rpm, String importSymbolName) {
-		this.rpm = rpm;
-		bits = getNameHash(importSymbolName);
-	}
-	
-	public RPMSymbolAddress(RPM rpm, RPMSymbolAddress addr){
-		this.rpm = rpm;
-		this.bits = addr.bits;
-	}
-	
-	public static int getNameHash(String name) {
-		if (name == null) {
-			return 0;
-		}
-		//FNV1a-32
-		int hash = 0x811C9DC5;
-		int len = name.length();
-		for (int i = 0; i < len; i++) {
-			hash = (hash ^ name.charAt(i)) * 16777619;
-		}
-		return hash;
 	}
 	
 	public void write(DataOutput out) throws IOException {
@@ -55,7 +26,7 @@ public class RPMSymbolAddress {
 	public int getAddr(){
 		return (bits & 0x7FFFFFFF) << 1 >> 1;
 	}
-	
+
 	public RPMAddrType getAddrType(){
 		return RPMAddrType.values()[(bits >> 31) & 1];
 	}
