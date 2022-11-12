@@ -33,8 +33,8 @@ public class RPMDump {
 	public static void main(String[] args) {
 		if (!JVMClassSourceChecker.isJAR() && args.length == 0) {
 			args = new String[]{
-				"--fourcc DLXF",
-				"D:\\_REWorkspace\\CTRMapProjects\\PMC\\vfs\\data\\lib\\ExtLib.Media.Cinepak.dll",
+				"--fourcc RPM0",
+				"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\PMC\\build\\PMC.rpm",
 				"-r -s -m"
 			};
 		}

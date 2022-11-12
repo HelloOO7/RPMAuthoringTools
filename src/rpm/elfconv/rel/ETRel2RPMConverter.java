@@ -165,23 +165,25 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 							}
 							addend += e.getAddend();
 							rel.target.targetType = relType == ELFARMRelocationType.R_ARM_ABS32 ? RPMRelTargetType.OFFSET : RPMRelTargetType.OFFSET_REL31;
-							RPMSymbol s = findRPMByMatchElfAddr(rpmSymbols, es, addend);
+							Elf2RPMSymbolAdapter s = findRPMByMatchElfAddr(rpmSymbols, es, addend);
 
 							if (s == null) {
-								//System.out.println("Notfound converted RPM symbol " + es.name + " addend " + addend + " shndx " + Long.toHexString(es.sectionIndex) + " at " + Integer.toHexString(relocOffs));
-
 								RPMSymbol baseSymbol = findRPMByMatchElfAddr(rpmSymbols, es, 0, true, false);
 								if (baseSymbol == null) {
 									throw new RuntimeException("Could not find converted symbol " + es);
 								}
-								s = new RPMSymbol(rpm, baseSymbol);
+								ELFSymbolSection.ELFSymbol dummyES = new ELFSymbolSection.ELFSymbol(es);
+								dummyES.value += addend;
+								//System.out.println("Notfound converted RPM symbol " + es.name + " addend " + addend + " shndx " + Long.toHexString(es.sectionIndex) + " at " + Integer.toHexString(relocOffs));
+								s = new Elf2RPMSymbolAdapter(rpm, dummyES);
+								s.address = baseSymbol.address + addend;
 								if (s.name != null) {
 									s.name += "_+0x" + Integer.toHexString(addend);
 								}
-								s.address += addend;
+								s.type = RPMSymbolType.VALUE;
 								
 								//System.out.println("Notfound fixup addr " + Integer.toHexString(s.address.getAddr()));
-								rpm.symbols.add(s);
+								rpmSymbols.add(s);
 							} else {
 								//System.out.println("Found symbol " + es + " at " + Integer.toHexString(s.address.getAddr()));
 							}
@@ -267,15 +269,15 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 		}
 	}
 
-	private static RPMSymbol findRPMByMatchElfAddr(List<Elf2RPMSymbolAdapter> symbols, ELFSymbolSection.ELFSymbol sym, int addend) {
+	private static Elf2RPMSymbolAdapter findRPMByMatchElfAddr(List<Elf2RPMSymbolAdapter> symbols, ELFSymbolSection.ELFSymbol sym, int addend) {
 		return findRPMByMatchElfAddr(symbols, sym, addend, false);
 	}
 
-	private static RPMSymbol findRPMByMatchElfAddr(List<Elf2RPMSymbolAdapter> symbols, ELFSymbolSection.ELFSymbol sym, int addend, boolean needsFunc) {
+	private static Elf2RPMSymbolAdapter findRPMByMatchElfAddr(List<Elf2RPMSymbolAdapter> symbols, ELFSymbolSection.ELFSymbol sym, int addend, boolean needsFunc) {
 		return findRPMByMatchElfAddr(symbols, sym, addend, false, needsFunc);
 	}
 
-	private static RPMSymbol findRPMByMatchElfAddr(List<Elf2RPMSymbolAdapter> symbols, ELFSymbolSection.ELFSymbol sym, int addend, boolean allowSectionSymbols, boolean needsFunc) {
+	private static Elf2RPMSymbolAdapter findRPMByMatchElfAddr(List<Elf2RPMSymbolAdapter> symbols, ELFSymbolSection.ELFSymbol sym, int addend, boolean allowSectionSymbols, boolean needsFunc) {
 		if (addend == 0) {
 			for (Elf2RPMSymbolAdapter a : symbols) {
 				if (a.origin == sym && (allowSectionSymbols || a.origin.getSymType() != ELFSymbolSection.ELFSymbolType.SECTION)) {
