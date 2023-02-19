@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import rpm.elfconv.ExternalSymbolDB;
-import xstandard.arm.elf.SectionType;
+import rpm.elfconv.SectionType;
 import xstandard.arm.elf.format.ELF;
 import xstandard.arm.elf.format.sections.ELFSection;
 import xstandard.arm.elf.format.sections.ELFSymbolSection;

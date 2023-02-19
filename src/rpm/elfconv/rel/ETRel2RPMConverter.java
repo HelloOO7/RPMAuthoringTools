@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import rpm.elfconv.ExternalSymbolDB;
-import xstandard.arm.elf.SectionType;
+import rpm.elfconv.SectionType;
 import xstandard.arm.elf.format.ELF;
 import xstandard.arm.elf.format.ELFARMRelocationType;
 import xstandard.arm.elf.format.sections.ELFRelocationSectionBase;
@@ -22,6 +22,8 @@ import rpm.format.rpm.RPMRelocationTarget;
 import rpm.format.rpm.RPMSymbolAddressCompat;
 import rpm.format.rpm.RPMSymbolType;
 import xstandard.arm.ARMAssembler;
+import xstandard.arm.elf.format.ELFSectionHeader;
+import xstandard.arm.elf.format.sections.ELFFuncArraySection;
 import xstandard.arm.elf.format.sections.ELFRelocationSection;
 import xstandard.fs.accessors.DiskFile;
 import xstandard.io.base.impl.ext.data.DataIOStream;
@@ -115,12 +117,34 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 			}
 		}
 		sections.add(extraSection);
+
+		int initArrayOffset = -1;
+		int finiArrayOffset = -1;
+
+		//Now add static ctors/dtors
+		for (RelElfSection staticsec : sections) {
+			if (staticsec.type == SectionType.INIT_ARRAY) {
+				if (initArrayOffset == -1) {
+					initArrayOffset = staticsec.targetOffset;
+				}
+				sectionsInOrder.add(staticsec);
+			}
+		}
+		for (RelElfSection staticsec : sections) {
+			if (staticsec.type == SectionType.FINI_ARRAY) {
+				if (finiArrayOffset == -1) {
+					finiArrayOffset = staticsec.targetOffset;
+				}
+				sectionsInOrder.add(staticsec);
+			}
+		}
+
 		sectionsInOrder.add(extraSection);
 		relSections.add(extraRelSection);
 
 		//BSS follows after code
 		for (RelElfSection s : sections) {
-			if (s.type != SectionType.TEXT) {
+			if (s.type == SectionType.BSS || s.type == SectionType.EXTERN) {
 				sectionsInOrder.add(s);
 			}
 		}
@@ -134,6 +158,19 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 			codeOffs += alignedLength;
 			if (sec.type == SectionType.BSS) {
 				bssSize += alignedLength;
+			}
+		}
+		for (Elf2RPMSymbolAdapter rpmSym : rpmSymbols) {
+			ELFSymbolSection.ELFSymbol sym = rpmSym.origin;
+			if (sym.getSymType() == ELFSymbolSection.ELFSymbolType.SECTION) {
+				ELFSection sec = elf.getSectionByIndex(sym.sectionIndex);
+				rpmSym.size = sec.header.size;
+				ELFSectionHeader.ELFSectionType est = sec.header.type.getSectionType();
+				if (est == ELFSectionHeader.ELFSectionType.INIT_ARRAY) {
+					rpm.sinitSymbols.add(rpmSym);
+				} else if (est == ELFSectionHeader.ELFSectionType.FINI_ARRAY) {
+					rpm.sfiniSymbols.add(rpmSym);
+				}
 			}
 		}
 
@@ -158,13 +195,14 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 
 					switch (relType) {
 						case R_ARM_PREL31:
+						case R_ARM_TARGET1:
 						case R_ARM_ABS32: {
 							int addend = sec.read32(relocOffs);
 							if (relType == ELFARMRelocationType.R_ARM_PREL31) {
 								addend = (addend << 1) >> 1;
 							}
 							addend += e.getAddend();
-							rel.target.targetType = relType == ELFARMRelocationType.R_ARM_ABS32 ? RPMRelTargetType.OFFSET : RPMRelTargetType.OFFSET_REL31;
+							rel.target.targetType = relType == ELFARMRelocationType.R_ARM_PREL31 ? RPMRelTargetType.OFFSET_REL31 : RPMRelTargetType.OFFSET;
 							Elf2RPMSymbolAdapter s = findRPMByMatchElfAddr(rpmSymbols, es, addend);
 
 							if (s == null) {
@@ -181,7 +219,7 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 									s.name += "_+0x" + Integer.toHexString(addend);
 								}
 								s.type = RPMSymbolType.VALUE;
-								
+
 								//System.out.println("Notfound fixup addr " + Integer.toHexString(s.address.getAddr()));
 								rpmSymbols.add(s);
 							} else {
@@ -215,7 +253,9 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 							break;
 						}
 						case R_ARM_JUMP24: {
-							rel.target.targetType = RPMRelTargetType.ARM_BRANCH;
+							int insn = sec.read32(relocOffs);
+							boolean isLink = (insn & (0b00000001 << 24)) != 0;
+							rel.target.targetType = isLink ? RPMRelTargetType.ARM_BRANCH_LINK : RPMRelTargetType.ARM_BRANCH;
 							RPMSymbol s = findRPMByMatchElfAddr(rpmSymbols, es, 0, true);
 							if (s == null) {
 								throw new RuntimeException("Could not find function symbol " + es.name);
@@ -247,9 +287,9 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 
 		DataIOStream code = new DataIOStream();
 		for (RelElfSection s : sectionsInOrder) {
-			if (s.type == SectionType.TEXT) {
+			if (s.type == SectionType.TEXT || s.isInitOrFiniArray()) {
 				code.seek(s.targetOffset);
-				code.write(s.getBytes());
+				s.write(code);
 			}
 		}
 		code.write(extraCode.toByteArray());
@@ -284,8 +324,7 @@ public class ETRel2RPMConverter implements IElf2RpmConverter {
 					return a;
 				}
 			}
-		}
-		else {
+		} else {
 			int addr = (int) (sym.value + addend);
 			for (Elf2RPMSymbolAdapter a : symbols) {
 				if (a.origin.sectionIndex == sym.sectionIndex && a.origin.value == addr) {

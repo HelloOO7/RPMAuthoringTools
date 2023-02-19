@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import rpm.elfconv.ExternalSymbolDB;
-import xstandard.arm.elf.SectionType;
+import rpm.elfconv.SectionType;
 import xstandard.arm.elf.format.ELF;
 import xstandard.arm.elf.format.sections.ELFSection;
 import xstandard.arm.elf.format.sections.ELFSymbolSection;
@@ -43,7 +43,7 @@ public class RelElfSection {
 		sym = symbols;
 		type = SectionType.getSectionTypeFromElf(sec.header);
 		sizeFromHeader = sec.header.size;
-		if (type != SectionType.BSS) {
+		if (type == SectionType.TEXT || isInitOrFiniArray()) {
 			io.seek(sec.header.offset);
 			byte[] b = new byte[sec.header.size];
 			io.read(b);
@@ -54,6 +54,10 @@ public class RelElfSection {
 	public int read32(int offset) throws IOException {
 		buf.seek(offset);
 		return buf.readInt();
+	}
+	
+	public final boolean isInitOrFiniArray() {
+		return type == SectionType.INIT_ARRAY || type == SectionType.FINI_ARRAY;
 	}
 	
 	public int getLength() {
@@ -112,5 +116,9 @@ public class RelElfSection {
 				}
 			}
 		}
+	}
+
+	void write(DataIOStream code) throws IOException {
+		code.write(getBytes());
 	}
 }

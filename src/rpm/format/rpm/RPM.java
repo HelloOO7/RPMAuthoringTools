@@ -55,10 +55,13 @@ public class RPM {
 	public static final int RPM_FOOTER_SIZE_LEGACY = 0x10;
 	public static final int RPM_FOOTER_SIZE = 0x20;
 
-	public static final int RPM_INFO_HEADER_SIZE = 0x20;
+	public static final int RPM_INFO_HEADER_SIZE = 0x24;
 
 	private int baseAddress = -1;
+
 	public List<RPMSymbol> symbols = new ArrayList<>();
+	public List<RPMSymbol> sinitSymbols = new ArrayList<>();
+	public List<RPMSymbol> sfiniSymbols = new ArrayList<>();
 	public List<RPMRelocation> relocations = new ArrayList<>();
 	public RPMMetaData metaData = new RPMMetaData();
 
@@ -169,6 +172,8 @@ public class RPM {
 			int codeOffset = 0;
 			int codeSize;
 			int metaDataOffset = -1;
+			int sinitOffset = -1;
+			int sfiniOffset = -1;
 
 			if (infoSectionOffset == -1) {
 				symbolsOffset = reader.readInt();
@@ -190,6 +195,10 @@ public class RPM {
 					codeOffset = reader.readInt();
 				}
 				codeSize = reader.readInt();
+				if (reader.versionOver(RPMRevisions.REV_SINIT_SFINI)) {
+					sinitOffset = reader.readHeaderOffset();
+					sfiniOffset = reader.readHeaderOffset();
+				}
 				metaDataOffset = reader.readHeaderOffset();
 			}
 
@@ -253,6 +262,15 @@ public class RPM {
 						s.nameHash = hashTable[hashIdx];
 					}
 				}
+				
+				if (sinitOffset != -1) {
+					reader.seek(sinitOffset);
+					readSymRefArray(reader, sinitOffset, sinitSymbols);
+				}
+				if (sfiniOffset != -1) {
+					reader.seek(sfiniOffset);
+					readSymRefArray(reader, sfiniOffset, sfiniSymbols);
+				}
 			}
 
 			if (relocationsOffset >= 0) {
@@ -298,6 +316,16 @@ public class RPM {
 			setBaseAddrNoUpdateBytes(baseAddress);
 		} catch (IOException ex) {
 			Logger.getLogger(RPM.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+	
+	private void readSymRefArray(RPMReader in, int offset, List<RPMSymbol> dest) throws IOException {
+		if (offset != -1) {
+			in.seek(offset);
+			int count = in.readUnsignedShort();
+			for (int i = 0; i < count; i++) {
+				dest.add(symbols.get(in.readUnsignedShort())); //range list
+			}
 		}
 	}
 
@@ -449,6 +477,12 @@ public class RPM {
 					newSymbol.address += base;
 				}
 				symbols.add(newSymbol);
+				if (source.sinitSymbols.contains(symbol)) {
+					sinitSymbols.add(newSymbol);
+				}
+				if (source.sfiniSymbols.contains(symbol)) {
+					sfiniSymbols.add(newSymbol);
+				}
 				oldToNewSymbolMap.put(symbol, newSymbol);
 			}
 
@@ -629,6 +663,13 @@ public class RPM {
 			}
 			size = MathEx.padInteger(size, RPM_PADDING);
 		}
+		if (!sinitSymbols.isEmpty()) {
+			size += (sinitSymbols.size() + 1) * Short.BYTES;
+		}
+		if (!sfiniSymbols.isEmpty()) {
+			size += (sfiniSymbols.size() + 1) * Short.BYTES;
+		}
+		size = MathEx.padInteger(size, RPM_PADDING);
 
 		if (!relocations.isEmpty() || baseAddress != 0) {
 			List<String> relocExternModuleNames = new ArrayList<>();
@@ -699,15 +740,23 @@ public class RPM {
 		for (RPMRelocation rel : relocations) {
 			usedSymbols.add(rel.source.symb);
 		}
+		usedSymbols.addAll(sinitSymbols);
+		usedSymbols.addAll(sfiniSymbols);
 		for (int i = 0; i < symbols.size(); i++) {
 			RPMSymbol s = symbols.get(i);
 			if (!s.isExportSymbol()) {
 				if (!usedSymbols.contains(s)) {
-					symbols.remove(i);
+					removeSymbol(s);
 					i--;
 				}
 			}
 		}
+	}
+
+	public void removeSymbol(RPMSymbol s) {
+		symbols.remove(s);
+		sinitSymbols.remove(s);
+		sfiniSymbols.remove(s);
 	}
 
 	public void stripIdleInternalRelocations() {
@@ -795,8 +844,9 @@ public class RPM {
 			TemporaryOffset stringsOffset = writer.createTempOffset(); //16
 			writer.writeInt(codeOffset); //20
 			writer.writeInt(codeSize); //24
-			TemporaryOffset metaDataOffset = writer.createTempOffset(); //28
-			writer.writeInt(0); //reserved values - 32 bytes total
+			TemporaryOffset sinitOffset = writer.createTempOffset(); //28
+			TemporaryOffset sfiniOffset = writer.createTempOffset(); //32
+			TemporaryOffset metaDataOffset = writer.createTempOffset(); //36 bytes total
 
 			StringTable strings = new StringTable(writer, true, true);
 
@@ -881,6 +931,10 @@ public class RPM {
 			} else {
 				symbOffset.set(-1);
 			}
+			
+			writeSymbolRefArray(writer, sinitOffset, sinitSymbols);
+			writeSymbolRefArray(writer, sfiniOffset, sfiniSymbols);
+			writer.pad(RPM_PADDING);
 
 			//Relocation table
 			if (!relocations.isEmpty() || baseAddress != 0) {
@@ -955,6 +1009,18 @@ public class RPM {
 		return null;
 	}
 
+	private void writeSymbolRefArray(RPMWriter writer, TemporaryOffset offs, List<RPMSymbol> l) throws IOException {
+		if (!l.isEmpty()) {
+			offs.setHere();
+			writer.writeShort(l.size());
+			for (RPMSymbol s : l) {
+				writer.writeShort(getSymbolNo(s));
+			}
+		} else {
+			offs.set(-1);
+		}
+	}
+
 	private boolean isInternalImportSymbolRel(RPMRelocation rel) {
 		return rel.target.isInternal()
 			&& rel.source.symb.isImportSymbol();
@@ -993,7 +1059,7 @@ public class RPM {
 		symbols.clear();
 		symbols.addAll(sorted);
 	}
-	
+
 	private static void sortSymbolsByHash(List<RPMSymbol> symbols) {
 		symbols.sort((o1, o2) -> {
 			return Integer.compareUnsigned(o1.nameHash, o2.nameHash);
@@ -1082,6 +1148,19 @@ public class RPM {
 			Logger.getLogger(RPM.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
+	
+	private static ARMAssembler.ARMCondition readARMCond(DataIOStream io) throws IOException {
+		if (true) {
+			//NOT IMPLEMENTED: Normally we would read the existing value, but what if there
+			//isn't actually a BL instruction in place?
+			//TODO: separate forced writes with regular relocations
+			return ARMAssembler.ARMCondition.AL;
+		}
+		io.checkpoint();
+		ARMAssembler.ARMCondition cond = ARMAssembler.ARMCondition.values()[(io.readInt() >>> 28) & 0xF];
+		io.resetCheckpoint();
+		return cond;
+	}
 
 	/**
 	 * Writes a relocation into a binary image.
@@ -1106,7 +1185,7 @@ public class RPM {
 					//Use branch with xchg since the target is Thumb
 					ARMAssembler.writeBLXInstruction(out, addr);
 				} else {
-					ARMAssembler.writeBranchInstruction(out, addr, true);
+					ARMAssembler.writeBranchInstruction(out, addr, true, readARMCond(out));
 				}
 				break;
 			case THUMB_BRANCH_LINK:
@@ -1118,7 +1197,7 @@ public class RPM {
 				break;
 			case ARM_BRANCH:
 				if (!targetIsThumb) {
-					ARMAssembler.writeBranchInstruction(out, addr, false);
+					ARMAssembler.writeBranchInstruction(out, addr, false, readARMCond(out));
 				} else {
 					if (true) {
 						throw new RuntimeException("Impossible ARM branch!! @ 0x" + Integer.toHexString(out.getPositionUnbased()));

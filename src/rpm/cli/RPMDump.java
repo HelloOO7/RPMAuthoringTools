@@ -32,9 +32,14 @@ public class RPMDump {
 
 	public static void main(String[] args) {
 		if (!JVMClassSourceChecker.isJAR() && args.length == 0) {
-			args = new String[]{
+			/*args = new String[]{
 				"--fourcc RPM0",
 				"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\PMC\\build\\PMC.rpm",
+				"-r -s -m"
+			};*/
+			args = new String[]{
+				"--fourcc DLXF",
+				"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\FieldEventFramework\\build\\FieldEventFramework.dll",
 				"-r -s -m"
 			};
 		}

@@ -5,7 +5,7 @@ public class RPMRevisions {
 	/**
 	 * Current revision of the RPM writer.
 	 */
-	public static final int REV_CURRENT = 12;
+	public static final int REV_CURRENT = 13;
 
 	/**
 	 * Initial version of the format.
@@ -98,4 +98,9 @@ public class RPMRevisions {
 	 * Global address flag moved to SymbolAttr.
 	 */
 	public static final int REV_GLOBAL_IN_SYMATTR = 12;
+	
+	/**
+	 * Static initializers and finalizers.
+	 */
+	public static final int REV_SINIT_SFINI = 13;
 }

@@ -52,6 +52,11 @@ public class RPMTool {
 				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml",
 				"--generate-relocations",
 			};
+			/*args = new String[]{
+				"-i D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\FieldEventFramework\\build\\FieldEventFramework.elf",
+				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\FieldEventFramework\\build\\FieldEventFramework.dll",
+				"--fourcc DLXF",
+				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml",};*/
 		}
 		ArgumentBuilder bld = new ArgumentBuilder(ARG_PTNS);
 		bld.parse(args);

@@ -7,7 +7,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import xstandard.arm.ThumbAssembler;
 import rpm.elfconv.ExternalSymbolDB;
-import xstandard.arm.elf.SectionType;
+import rpm.elfconv.SectionType;
 import xstandard.arm.elf.SymbInfo;
 import xstandard.arm.elf.format.ELF;
 import xstandard.arm.elf.format.sections.ELFSection;
