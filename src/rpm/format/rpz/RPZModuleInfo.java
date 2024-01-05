@@ -27,7 +27,7 @@ public class RPZModuleInfo extends RPZYmlBase {
 	@YamlNodeName("ProductId")
 	public String productId;
 	/**
-	 * The name of the describes RPM, inside the 'code' directory.
+	 * The name of the described RPM, inside the 'code' directory.
 	 */
 	@YamlNodeName("RPMName")
 	public String rpmName;

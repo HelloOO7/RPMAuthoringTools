@@ -236,7 +236,7 @@ public class RPZ extends FSFileAdapter {
 					continue;
 				}
 				if (!cntSrc.exists()) {
-					if (handler.throwError(IRPZHandler.RPZErrorCode.FILE_NOT_FOUND, "Could not open file " + cntTgt + " for write access!")) {
+					if (handler.throwError(IRPZHandler.RPZErrorCode.FILE_NOT_FOUND, "Could not open file " + cntSrc + " for reading!")) {
 						return false;
 					}
 					continue;

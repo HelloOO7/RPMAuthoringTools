@@ -16,6 +16,7 @@ import xstandard.fs.accessors.DiskFile;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import rpm.format.rpm.RPMMetaData;
 import rpm.format.rpm.RPMRelTargetType;
 import rpm.format.rpm.RPMRelocation;
 import rpm.format.rpm.RPMRelocationSource;
@@ -23,6 +24,7 @@ import rpm.format.rpm.RPMRelocationTarget;
 import rpm.format.rpm.RPMSymbol;
 import rpm.format.rpm.RPMSymbolType;
 import rpm.util.AutoRelGenerator;
+import xstandard.formats.yaml.KeyValuePair;
 import xstandard.util.JVMClassSourceChecker;
 
 public class RPMTool {
@@ -32,6 +34,7 @@ public class RPMTool {
 		new ArgumentPattern("output", "The output RPM file.", ArgumentType.STRING, null, "-o", "--output"),
 		new ArgumentPattern("fourcc", "Override the recognized RPM format signature.", ArgumentType.STRING, RPM.RPM_PROLOG_MAGIC, "--fourcc"),
 		new ArgumentPattern("esdb", "An external symbol database for ELF conversion.", ArgumentType.STRING, null, "--esdb"),
+		new ArgumentPattern("meta", "An YML key/value map of metadata.", ArgumentType.STRING, null, "--meta"),
 		new ArgumentPattern("mapfile", "A MAP file to export RPM symbols into.", ArgumentType.STRING, null, "--mapfile"),
 		new ArgumentPattern("inrelfile", "An YML file to import external relocations from.", ArgumentType.STRING, null, "--in-relocations-yml"),
 		new ArgumentPattern("outrelfile", "An YML file to export external relocations into.", ArgumentType.STRING, null, "--out-relocations-yml"),
@@ -41,22 +44,12 @@ public class RPMTool {
 
 	public static void main(String[] args) {
 		if (args.length == 0 && !JVMClassSourceChecker.isJAR()) {
-			/*args = new String[]{
-				"-i D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\NitroKernel\\build\\NitroKernel.elf",
-				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\NitroKernel\\build\\NitroKernel.dll",
-				"--fourcc DLXF",
-				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml",};*/
-			args = new String[] {
+			args = new String[]{
 				"-i D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\PMC\\build\\PMC.elf",
-				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\PMC\\build\\PMC.rpm",
-				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml",
-				"--generate-relocations",
-			};
-			/*args = new String[]{
-				"-i D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\FieldEventFramework\\build\\FieldEventFramework.elf",
-				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\FieldEventFramework\\build\\FieldEventFramework.dll",
-				"--fourcc DLXF",
-				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb.yml",};*/
+				"-o D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\PMC\\build\\PMC_B2.rpm",
+				"--esdb D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\IREO.yml",
+				"--meta D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\PMC\\BuildFiles\\version_b2.yml",
+				"--generate-relocations",};
 		}
 		ArgumentBuilder bld = new ArgumentBuilder(ARG_PTNS);
 		bld.parse(args);
@@ -126,6 +119,20 @@ public class RPMTool {
 						writeRelocationsAsYml(rpm, outrelfile);
 					} else {
 						System.out.println("Can not write to external relocation YML!");
+					}
+				}
+
+				if (bld.hasArgument("meta")) {
+					FSFile metafile = new DiskFile(bld.getContent("meta").stringValue());
+					if (metafile.canRead()) {
+						Yaml metaYml = new Yaml(metafile);
+						for (YamlNode keyval : metaYml.root.children) {
+							if (keyval.content instanceof KeyValuePair) {
+								rpm.metaData.putValue(new RPMMetaData.RPMMetaValue(keyval.getKey(), keyval.isValueInt() ? (Integer) keyval.getValueInt() : keyval.getValue()));
+							}
+						}
+					} else {
+						System.out.println("Can not read metadata YML!");
 					}
 				}
 

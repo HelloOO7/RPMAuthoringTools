@@ -10,8 +10,15 @@ import java.util.List;
 /**
  * A code symbol, RPM flavour.
  *
- * struct RPMSymbol { //sizeof 12 RPM_NAMEOFS Name; uint16_t Size; RPMAddress Addr; RPMSymbolType Type;
- * (uint8_t) uint8_t Attr; uint16_t Reserved16; }
+ * <pre>{@code
+ * struct RPMSymbol { //sizeof 12
+ *     RPM_NAMEOFS Name;
+ *     uint16_t Size;
+ *     RPMAddress Addr;
+ *     RPMSymbolType Type; (uint8_t) 
+ *     uint8_t Attr;
+ *     uint16_t Reserved16;
+ * }}</pre>
  */
 public class RPMSymbol {
 

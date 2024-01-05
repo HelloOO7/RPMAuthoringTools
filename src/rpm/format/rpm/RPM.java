@@ -614,7 +614,9 @@ public class RPM {
 
 		size += code.getRawLength();
 		size = MathEx.padInteger(size, 4);
-		size += bssSize;
+		if (includeBss) {
+			size += bssSize;
+		}
 		size = MathEx.padInteger(size, RPM_PADDING);
 
 		size += RPM_DLLEXEC_HEADER_SIZE;

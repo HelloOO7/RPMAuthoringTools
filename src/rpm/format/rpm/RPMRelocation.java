@@ -8,11 +8,22 @@ import java.util.Map;
 /**
  * Relocation info for binary addresses in a RPM's code image.
  *
- * CURRENT (0.10) struct RPMRelocation { //sizeof 8 RPMRelocationTarget Target; RPMRelocationSource Source; }
+ * <pre> CURRENT (0.10) 
+ * {@code
+ * struct RPMRelocation { //sizeof 8
+ *     RPMRelocationTarget Target;
+ *     RPMRelocationSource Source;
+ * }}</pre>
  *
- * LEGACY (0.1 through 0.9) struct RPMRelocation { //sizeof 16 RPMRelSourceType	SrcType; //uint8_t
- * RPMRelTargetType	TgtType; //uint8_t uint16_t	Reserved; RPMRelocationSource? Source; //reserved 4 bytes of
- * space. RPMRelocationTarget? Target; //reserved 8 bytes of space. }
+ * <pre> LEGACY (0.1 through 0.9)
+ * {@code
+ * struct RPMRelocation { //sizeof 16
+ *     RPMRelSourceType	SrcType; //uint8_t
+ *     RPMRelTargetType	TgtType; //uint8_t 
+ *     uint16_t	Reserved; 
+ *     RPMRelocationSource? Source; //reserved 4 bytes of space.
+ *     RPMRelocationTarget? Target; //reserved 8 bytes of space.
+ * }}</pre>
  */
 public class RPMRelocation {
 
@@ -20,7 +31,7 @@ public class RPMRelocation {
 	public RPMRelocationSource source;
 
 	public RPMRelocation() {
-		
+
 	}
 
 	public RPMRelocation(RPM rpm, RPMRelocation rel, Map<RPMSymbol, RPMSymbol> symbolTransferMap) {
@@ -98,7 +109,7 @@ public class RPMRelocation {
 	public int getSize() {
 		return 8;
 	}
-	
+
 	@Override
 	public String toString() {
 		return target + " -> " + source;
