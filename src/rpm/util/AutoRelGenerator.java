@@ -60,9 +60,15 @@ public class AutoRelGenerator {
 							NTRSegmentType segType = NTRSegmentType.fromName(seg.segmentType);
 							if (segType != null) {
 								hookedAddr = esdb.getOffsetOfFunc(nameOfHookedFunc);
+								if (!SymbolTypeDetector.isMostLikelyValueName(nameOfHookedFunc)) {
+									if ((hookedAddr & 1) == 1) {
+										hookedAddr = MathEx.padIntegerDownPow2(hookedAddr, 1); // Thumb
+									} else {
+										hookedAddr = MathEx.padIntegerDownPow2(hookedAddr, 2); // ARM
+									}
+								}
 								if (funcHookAddend != 0) {
 									hookedAddr += funcHookAddend;
-									hookedAddr = MathEx.padIntegerDownPow2(hookedAddr, 1);
 								}
 								segmentName = seg.segmentName;
 							}

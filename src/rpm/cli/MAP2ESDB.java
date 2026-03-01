@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import rpm.util.SymbolTypeDetector;
 
 /**
  *
@@ -40,7 +41,7 @@ public class MAP2ESDB {
 	public static void main(String[] args) {
 		if (!JVMClassSourceChecker.isJAR() && args.length == 0) {
 			args = new String[]{
-				"-i \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\Field.map\"",
+				"-i \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\Field2.map\"",
 				"-t \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\Field.thm\"",
 				"-a \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\Field.alias\"",
 				"-m \"D:\\_REWorkspace\\pokescript_genv\\codeinjection_new\\esdb_293.yml\"",
@@ -178,7 +179,7 @@ public class MAP2ESDB {
 						ESDBAddress a = addrQueue.get(i);
 						if (a.address >= sri.startAddr && a.address < sri.endAddr && (a.address & 1) == 0) {
 							String name = esdb.getNameOfAddress(a);
-							if (!isMostLikelyValueName(name)) {
+							if (!SymbolTypeDetector.isMostLikelyValueName(name)) {
 								a.address += sri.value;
 							} else {
 								System.out.println("Guessing symbol " + name + " to be a value. Omitting Thumb bit.");
@@ -272,38 +273,6 @@ public class MAP2ESDB {
 		} catch (FileNotFoundException ex) {
 			Logger.getLogger(MAP2ESDB.class.getName()).log(Level.SEVERE, null, ex);
 		}
-	}
-
-	private static boolean isMostLikelyValueName(String str) {
-		if (str.startsWith("g_")) {
-			return true;
-		}
-		int capitalCount = 0;
-		int lowercaseCount = 0;
-		boolean isAnyUpperCase = false;
-		boolean isLastLowercase = false;
-		for (int i = 0; i < str.length(); i++) {
-			char c = str.charAt(i);
-			if (Character.isLetter(c)) {
-				if (Character.isUpperCase(c)) {
-					capitalCount++;
-					isLastLowercase = false;
-					isAnyUpperCase = true;
-				} else {
-					if (isLastLowercase && (i > 2 || isAnyUpperCase)) {
-						//permit ppTHING, but break otherwise
-						return false;
-					}
-					if (c != 'p' && c != 's' && c != 'g') {
-						return false;
-					}
-					lowercaseCount++;
-					isLastLowercase = true;
-				}
-			}
-		}
-		//naming conventions should only allow lowercase for stuff like ppTHING or ppSTUFF_IDs
-		return capitalCount > lowercaseCount && lowercaseCount <= 3;
 	}
 
 	private static MapSegmentInfo getSegmentOfAddress(int add, List<MapSegmentInfo> l) {
